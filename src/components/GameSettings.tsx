@@ -72,15 +72,14 @@ const GameSettingsDialog: React.FC<GameSettingsDialogProps> = ({
           {localSettings.mode === 'ai' && (
             <>
               <div className="grid gap-2">
-                <Label htmlFor="difficulty" className="text-left">AI Difficulty</Label>
+                <Label htmlFor="difficulty-trigger" className="text-left">AI Difficulty</Label>
                 <Select
-                  id="difficulty"
                   value={localSettings.difficulty}
                   onValueChange={(value: GameDifficulty) => 
                     setLocalSettings({ ...localSettings, difficulty: value })
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="difficulty-trigger">
                     <SelectValue placeholder="Select difficulty" />
                   </SelectTrigger>
                   <SelectContent>
@@ -92,15 +91,14 @@ const GameSettingsDialog: React.FC<GameSettingsDialogProps> = ({
               </div>
               
               <div className="grid gap-2">
-                <Label htmlFor="aiModel" className="text-left">AI Model</Label>
+                <Label htmlFor="aiModel-trigger" className="text-left">AI Model</Label>
                 <Select
-                  id="aiModel"
                   value={localSettings.aiModel}
                   onValueChange={(value: GameAIModel) => 
                     setLocalSettings({ ...localSettings, aiModel: value })
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="aiModel-trigger">
                     <SelectValue placeholder="Select AI model" />
                   </SelectTrigger>
                   <SelectContent>
@@ -111,15 +109,14 @@ const GameSettingsDialog: React.FC<GameSettingsDialogProps> = ({
               </div>
               
               <div className="grid gap-2">
-                <Label htmlFor="playerSide" className="text-left">Play As</Label>
+                <Label htmlFor="playerSide-trigger" className="text-left">Play As</Label>
                 <Select
-                  id="playerSide"
                   value={localSettings.playerSide}
                   onValueChange={(value: Player) => 
                     setLocalSettings({ ...localSettings, playerSide: value })
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="playerSide-trigger">
                     <SelectValue placeholder="Select your side" />
                   </SelectTrigger>
                   <SelectContent>
