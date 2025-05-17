@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,16 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				game: {
+					board: '#e5c29f',
+					boardDark: '#b58863',
+					tiger: '#ff7f50',
+					tigerHover: '#ff9770',
+					goat: '#4169e1',
+					goatHover: '#6187e6',
+					line: '#8b4513',
+					highlight: '#ffdc73',
 				}
 			},
 			borderRadius: {
@@ -84,11 +95,17 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'piece-move': {
+					'0%': { transform: 'scale(1)' },
+					'50%': { transform: 'scale(1.1)' },
+					'100%': { transform: 'scale(1)' }
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'piece-move': 'piece-move 0.3s ease-in-out'
 			}
 		}
 	},
