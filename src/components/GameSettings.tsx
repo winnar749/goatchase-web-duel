@@ -12,18 +12,23 @@ interface GameSettingsDialogProps {
   onClose: () => void;
   settings: GameSettings;
   onSettingsChange: (newSettings: GameSettings) => void;
+  onStartGame?: () => void;
 }
 
 const GameSettingsDialog: React.FC<GameSettingsDialogProps> = ({ 
   isOpen, 
   onClose, 
   settings, 
-  onSettingsChange 
+  onSettingsChange,
+  onStartGame
 }) => {
   const [localSettings, setLocalSettings] = useState<GameSettings>({ ...settings });
   
   const handleSave = () => {
     onSettingsChange(localSettings);
+    if (onStartGame) {
+      onStartGame();
+    }
     onClose();
   };
   
@@ -140,7 +145,7 @@ const GameSettingsDialog: React.FC<GameSettingsDialogProps> = ({
         
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSave}>Save Settings</Button>
+          <Button onClick={handleSave}>{onStartGame ? "Start Game" : "Save Settings"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
