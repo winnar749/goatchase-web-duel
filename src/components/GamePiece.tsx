@@ -16,8 +16,8 @@ const GamePiece: React.FC<GamePieceProps> = ({
   cellSize,
   isSelected = false
 }) => {
-  // Further reduce piece size multiplier from 0.4 to 0.35
-  const pieceSize = cellSize * 0.35;
+  // Adjust piece size based on the board size
+  const pieceSize = cellSize * 0.4; // Slightly larger for better visibility
   
   // Define styles based on piece type
   let pieceStyles = "";

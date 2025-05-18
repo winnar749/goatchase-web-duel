@@ -229,7 +229,7 @@ const Play: React.FC = () => {
     <div className="flex flex-col min-h-screen">
       <Header />
       
-      <main className="flex-1 container max-w-7xl py-8">
+      <main className="flex-1 container max-w-7xl py-4">
         {!gameStarted ? (
           <div className="flex flex-col items-center justify-center space-y-8 mt-10">
             <h1 className="text-4xl font-bold text-center">
@@ -267,91 +267,122 @@ const Play: React.FC = () => {
             </Button>
           </div>
         ) : (
-          <>
-            <div className="mb-6 flex flex-col md:flex-row justify-between items-center">
-              <h1 className="text-2xl md:text-3xl font-bold text-center md:text-left">
-                {gameSettings.mode === "local" ? "Local Game" : 
-                gameSettings.mode === "ai" ? `Playing Against AI (${gameSettings.aiModel})` :
-                "Online Game"}
-              </h1>
+          <div className="grid grid-cols-12 gap-4">
+            {/* Game info sidebar - left side */}
+            <div className="col-span-12 md:col-span-3 space-y-3">
+              {/* Game mode and timer header */}
+              <Card className="p-3">
+                <h2 className="text-xl font-bold mb-2">
+                  {gameSettings.mode === "local" ? "Local Game" : 
+                  gameSettings.mode === "ai" ? `AI (${gameSettings.aiModel})` :
+                  "Online Game"}
+                </h2>
+                
+                {/* Timer display */}
+                <div className="flex flex-col space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <div className={`w-3 h-3 rounded-full ${gameState.turn === 'tiger' ? 'bg-game-tiger animate-pulse' : 'bg-gray-300'} mr-2`}></div>
+                      <span className="text-muted-foreground">Tigers</span>
+                    </div>
+                    <div className="flex items-center">
+                      <Clock className="h-4 w-4 mr-1" />
+                      <span className={`font-mono ${tigerTime < 60 ? 'text-red-500' : ''}`}>
+                        {formatTime(tigerTime)}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <div className={`w-3 h-3 rounded-full ${gameState.turn === 'goat' ? 'bg-game-goat animate-pulse' : 'bg-gray-300'} mr-2`}></div>
+                      <span className="text-muted-foreground">Goats</span>
+                    </div>
+                    <div className="flex items-center">
+                      <Clock className="h-4 w-4 mr-1" />
+                      <span className={`font-mono ${goatTime < 60 ? 'text-red-500' : ''}`}>
+                        {formatTime(goatTime)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </Card>
               
-              {/* Timer display */}
-              <div className="flex items-center space-x-8 bg-card p-3 rounded-lg mt-4 md:mt-0">
-                <div className="flex items-center">
-                  <div className={`w-3 h-3 rounded-full ${gameState.turn === 'tiger' ? 'bg-game-tiger animate-pulse' : 'bg-gray-300'} mr-2`}></div>
-                  <div className="flex items-center">
-                    <Clock className="h-4 w-4 mr-1" />
-                    <span className={`font-mono text-lg ${tigerTime < 60 ? 'text-red-500' : ''}`}>
-                      {formatTime(tigerTime)}
-                    </span>
-                  </div>
-                  <span className="mx-2 text-muted-foreground">Tigers</span>
+              {/* Game status */}
+              <Card className="p-3">
+                <div className="text-center font-medium bg-secondary p-2 rounded-md">
+                  {gameState.winner ? 
+                    `Game Over - ${gameState.winner === 'tiger' ? 'Tigers' : 'Goats'} Win!` : 
+                    `${gameState.turn === 'tiger' ? 'Tigers' : 'Goats'} Turn ${
+                    gameState.phase === 'placement' ? 
+                      `- Placement (${gameState.goatsPlaced}/20)` : 
+                      '- Movement'
+                    }`
+                  }
                 </div>
-                
-                <div className="flex items-center">
-                  <div className={`w-3 h-3 rounded-full ${gameState.turn === 'goat' ? 'bg-game-goat animate-pulse' : 'bg-gray-300'} mr-2`}></div>
-                  <div className="flex items-center">
-                    <Clock className="h-4 w-4 mr-1" />
-                    <span className={`font-mono text-lg ${goatTime < 60 ? 'text-red-500' : ''}`}>
-                      {formatTime(goatTime)}
-                    </span>
-                  </div>
-                  <span className="mx-2 text-muted-foreground">Goats</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              <div className="lg:col-span-8">
-                {/* Game Board */}
-                <div className="bg-card p-4 rounded-lg">
-                  <GameBoard 
-                    gameState={gameState}
-                    onMove={handleMove}
-                    readOnly={isPaused}
-                  />
-                </div>
-              </div>
+              </Card>
               
-              <div className="lg:col-span-4 space-y-4">
-                {/* Game Info Panel */}
-                <Card className="p-4">
-                  <h2 className="text-xl font-bold mb-2">Game Info</h2>
-                  <div className="space-y-2">
-                    <p>Current Turn: <span className="font-medium">{gameState.turn === 'tiger' ? 'Tigers' : 'Goats'}</span></p>
-                    <p>Phase: <span className="font-medium">{gameState.phase === 'placement' ? 'Placement' : 'Movement'}</span></p>
-                    <p>Goats Placed: <span className="font-medium">{gameState.goatsPlaced}/20</span></p>
-                    <p>Goats Captured: <span className="font-medium">{gameState.goatsCaptured}/5</span></p>
+              {/* Game statistics */}
+              <Card className="p-3">
+                <h3 className="font-medium mb-2">Game Statistics</h3>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span>Goats Placed:</span>
+                    <span className="font-medium">{gameState.goatsPlaced}/20</span>
                   </div>
-                </Card>
-                
-                {/* Game Controls */}
-                <Card className="p-4">
-                  <h2 className="text-xl font-bold mb-2">Game Controls</h2>
-                  <div className="flex flex-wrap gap-2">
-                    <Button size="sm" variant="outline" onClick={handleUndo} disabled={previousStates.length === 0}>
-                      Undo
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={handlePause}>
-                      {isPaused ? 'Resume' : 'Pause'}
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => setShowSettings(true)}>
-                      Settings
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={handleShare}>
-                      Share Game
-                    </Button>
-                    <Button size="sm" variant="destructive" onClick={handleReset}>
-                      Reset Game
-                    </Button>
+                  <div className="flex justify-between">
+                    <span>Goats Captured:</span>
+                    <span className="font-medium">{gameState.goatsCaptured}/5</span>
                   </div>
-                </Card>
-                
-                {/* Game Info */}
+                  <div className="flex justify-between">
+                    <span>Phase:</span>
+                    <span className="font-medium">{gameState.phase}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Moves Made:</span>
+                    <span className="font-medium">{gameState.moveHistory.length}</span>
+                  </div>
+                </div>
+              </Card>
+              
+              {/* Game controls */}
+              <Card className="p-3">
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" variant="outline" onClick={handleUndo} disabled={previousStates.length === 0}>
+                    Undo
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={handlePause}>
+                    {isPaused ? 'Resume' : 'Pause'}
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => setShowSettings(true)}>
+                    Settings
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={handleShare}>
+                    Share
+                  </Button>
+                  <Button size="sm" variant="destructive" onClick={handleReset}>
+                    Reset
+                  </Button>
+                </div>
+              </Card>
+              
+              {/* Game Info */}
+              <div className="hidden md:block">
                 <GameInfo />
               </div>
             </div>
-          </>
+            
+            {/* Game Board - center/right side */}
+            <div className="col-span-12 md:col-span-9 flex flex-col items-center justify-center">
+              <div className="bg-card p-4 rounded-lg w-full flex flex-col items-center">
+                <GameBoard 
+                  gameState={gameState}
+                  onMove={handleMove}
+                  readOnly={isPaused}
+                />
+              </div>
+            </div>
+          </div>
         )}
         
         {/* Dialogs */}
