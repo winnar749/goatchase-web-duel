@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -131,6 +132,22 @@ const Play: React.FC = () => {
   // Handle game moves
   const handleMove = (move: Move) => {
     if (isPaused || gameState.winner || !gameStarted) return;
+    
+    // Check if this is just a selection, not an actual move
+    if (move.selection) {
+      // Just update the selected piece without changing turn or other state
+      setGameState({
+        ...gameState,
+        selectedPiece: move.from
+      });
+      return;
+    }
+    
+    // For actual moves
+    if (move.from && move.to && move.from.row === move.to.row && move.from.col === move.to.col) {
+      // This is just selecting a piece, not making a move
+      return;
+    }
     
     // Save current state for undo
     setPreviousStates(prev => [...prev, gameState]);

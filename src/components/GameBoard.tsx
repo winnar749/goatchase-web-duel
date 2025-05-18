@@ -82,6 +82,11 @@ const GameBoard: React.FC<GameBoardProps> = ({
     />
   );
   
+  // Clear highlighted positions when turn changes or game state updates
+  useEffect(() => {
+    setHighlightedPositions([]);
+  }, [gameState.turn, gameState.phase]);
+  
   // Handle intersection click
   const handleIntersectionClick = (position: Position) => {
     if (readOnly || gameState.winner) return;
@@ -96,7 +101,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
       }
     }
     
-    // If a piece is already selected
+    // If a piece is already selected, check if the clicked position is a valid move
     if (selectedPiece) {
       // Check if the clicked position is a valid move
       if (highlightedPositions.some(pos => pos.row === position.row && pos.col === position.col)) {
@@ -108,19 +113,21 @@ const GameBoard: React.FC<GameBoardProps> = ({
     }
     
     // If the clicked position contains a piece of the current player
-    if (gameState.board[position.row][position.col] === turn) {
+    const clickedPiece = gameState.board[position.row][position.col];
+    if (clickedPiece === turn) {
       // Select the piece and show valid moves
       const validMoves = getValidMovesForPosition(gameState, position);
       setHighlightedPositions(validMoves);
       
-      // Update game state with selected piece
-      const newGameState = { 
-        ...gameState, 
-        selectedPiece: position,
-        validMoves
-      };
-      
-      // Note: We don't call onMove here because we're just selecting, not moving
+      // Update game state with selected piece through onMove callback
+      // This will call back to the Play component which manages the game state
+      if (validMoves.length > 0) {
+        onMove({ 
+          from: position, 
+          to: position, // Same position means we're just selecting, not moving
+          selection: true // Add a flag to indicate this is just a selection
+        });
+      }
       return;
     }
     

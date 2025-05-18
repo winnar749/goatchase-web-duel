@@ -267,6 +267,14 @@ export function isPlayerTrapped(gameState: GameState, player: Player): boolean {
 
 // Make a move and return the updated game state
 export function makeMove(gameState: GameState, move: Move): GameState {
+  // If this is just a selection, not an actual move
+  if (move.selection) {
+    return {
+      ...gameState,
+      selectedPiece: move.from
+    };
+  }
+  
   const { from, to } = move;
   let { board, phase, turn, goatsPlaced, goatsCaptured, moveHistory, winner } = { ...gameState };
   

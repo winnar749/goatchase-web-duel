@@ -14,6 +14,7 @@ export type Move = {
   from: Position | null; // null for placement phase
   to: Position;
   capture?: Position[]; // positions of captured pieces
+  selection?: boolean;  // flag to indicate this is just a selection, not an actual move
 };
 
 export type GamePiece = {
