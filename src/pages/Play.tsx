@@ -135,6 +135,15 @@ const Play: React.FC = () => {
     
     // Check if this is just a selection, not an actual move
     if (move.selection) {
+      // If selecting null, it means deselect
+      if (move.from === null) {
+        setGameState({
+          ...gameState,
+          selectedPiece: null
+        });
+        return;
+      }
+      
       // Just update the selected piece without changing turn or other state
       setGameState({
         ...gameState,

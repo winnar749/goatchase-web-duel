@@ -23,8 +23,8 @@ const GameBoard: React.FC<GameBoardProps> = ({
   const [highlightedPositions, setHighlightedPositions] = useState<Position[]>([]);
   const [pieceAnimation, setPieceAnimation] = useState<string | null>(null);
   
-  // Further reduce maximum size from 500px to 420px and viewport multiplier from 0.7 to 0.6
-  const boardSize = Math.min(window.innerWidth * 0.6, 420);
+  // Further reduce maximum size from 420px to 380px
+  const boardSize = Math.min(window.innerWidth * 0.5, 380);
   const cellSize = boardSize / (BOARD_SIZE - 1);
   
   // Set up the grid lines
@@ -87,6 +87,16 @@ const GameBoard: React.FC<GameBoardProps> = ({
     setHighlightedPositions([]);
   }, [gameState.turn, gameState.phase]);
   
+  // Update highlighted positions when selected piece changes
+  useEffect(() => {
+    if (gameState.selectedPiece) {
+      const validMoves = getValidMovesForPosition(gameState, gameState.selectedPiece);
+      setHighlightedPositions(validMoves);
+    } else {
+      setHighlightedPositions([]);
+    }
+  }, [gameState.selectedPiece]);
+  
   // Handle intersection click
   const handleIntersectionClick = (position: Position) => {
     if (readOnly || gameState.winner) return;
@@ -107,9 +117,27 @@ const GameBoard: React.FC<GameBoardProps> = ({
       if (highlightedPositions.some(pos => pos.row === position.row && pos.col === position.col)) {
         // Make the move
         onMove({ from: selectedPiece, to: position });
-        setHighlightedPositions([]);
         return;
       }
+      
+      // If clicked on another own piece, select it instead
+      const clickedPiece = gameState.board[position.row][position.col];
+      if (clickedPiece === turn) {
+        onMove({ 
+          from: position, 
+          to: position, 
+          selection: true
+        });
+        return;
+      }
+      
+      // If clicked elsewhere, deselect
+      onMove({ 
+        from: null, 
+        to: position, 
+        selection: true
+      });
+      return;
     }
     
     // If the clicked position contains a piece of the current player
@@ -117,22 +145,15 @@ const GameBoard: React.FC<GameBoardProps> = ({
     if (clickedPiece === turn) {
       // Select the piece and show valid moves
       const validMoves = getValidMovesForPosition(gameState, position);
-      setHighlightedPositions(validMoves);
       
       // Update game state with selected piece through onMove callback
-      // This will call back to the Play component which manages the game state
-      if (validMoves.length > 0) {
-        onMove({ 
-          from: position, 
-          to: position, // Same position means we're just selecting, not moving
-          selection: true // Add a flag to indicate this is just a selection
-        });
-      }
+      onMove({ 
+        from: position, 
+        to: position, 
+        selection: true
+      });
       return;
     }
-    
-    // If none of the above, clear selection
-    setHighlightedPositions([]);
   };
   
   // Generate board intersections

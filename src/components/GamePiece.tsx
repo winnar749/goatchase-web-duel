@@ -1,6 +1,7 @@
 
 import React from "react";
 import { Player, Position } from "../types/game";
+import { Cat, Deer } from "lucide-react"; // Using Cat for tiger and Deer for goat
 
 interface GamePieceProps {
   type: Player;
@@ -15,8 +16,8 @@ const GamePiece: React.FC<GamePieceProps> = ({
   cellSize,
   isSelected = false
 }) => {
-  // Further reduce piece size multiplier from 0.5 to 0.4
-  const pieceSize = cellSize * 0.4;
+  // Further reduce piece size multiplier from 0.4 to 0.35
+  const pieceSize = cellSize * 0.35;
   
   // Define styles based on piece type
   let pieceStyles = "";
@@ -29,7 +30,7 @@ const GamePiece: React.FC<GamePieceProps> = ({
   
   return (
     <div
-      className={`absolute rounded-full shadow-md ${pieceStyles} transition-all duration-200 ease-in-out`}
+      className={`absolute rounded-full shadow-md ${pieceStyles} transition-all duration-200 ease-in-out flex items-center justify-center`}
       style={{
         width: `${pieceSize}px`,
         height: `${pieceSize}px`,
@@ -40,20 +41,11 @@ const GamePiece: React.FC<GamePieceProps> = ({
         cursor: 'pointer'
       }}
     >
-      {/* Icon or pattern inside the piece */}
-      <div className="w-full h-full flex items-center justify-center text-white">
-        {type === "tiger" ? (
-          <svg viewBox="0 0 24 24" className="w-2/3 h-2/3" fill="none" stroke="white" strokeWidth="2">
-            <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
-            <path d="M8 9h0M16 9h0M11 14c.8 0 2 .2 2 1M9 20l.1-1 1.9-6M15 20l-.1-1-1.9-6" />
-          </svg>
-        ) : (
-          <svg viewBox="0 0 24 24" className="w-2/3 h-2/3" fill="none" stroke="white" strokeWidth="2">
-            <path d="M17 7c0 4.333-5 7-5 7s-5-2.667-5-7c0-2.917 2.5-5 5-5s5 2.083 5 5z" />
-            <path d="M12 14v7M9 18h6" />
-          </svg>
-        )}
-      </div>
+      {type === "tiger" ? (
+        <Cat size={pieceSize * 0.7} color="white" strokeWidth={2} />
+      ) : (
+        <Deer size={pieceSize * 0.7} color="white" strokeWidth={2} />
+      )}
     </div>
   );
 };
