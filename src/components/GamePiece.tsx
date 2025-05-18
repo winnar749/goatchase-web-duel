@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Player, Position } from "../types/game";
-import { Cat, Deer } from "lucide-react"; // Using Cat for tiger and Deer for goat
+import { Cat, Goat } from "lucide-react"; // Using Cat for tiger and Goat for goat (Goat is available)
 
 interface GamePieceProps {
   type: Player;
@@ -44,7 +44,7 @@ const GamePiece: React.FC<GamePieceProps> = ({
       {type === "tiger" ? (
         <Cat size={pieceSize * 0.7} color="white" strokeWidth={2} />
       ) : (
-        <Deer size={pieceSize * 0.7} color="white" strokeWidth={2} />
+        <Goat size={pieceSize * 0.7} color="white" strokeWidth={2} />
       )}
     </div>
   );
