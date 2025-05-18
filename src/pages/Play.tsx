@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -13,7 +12,7 @@ import { initializeGameState, makeMove, getAIMoveEasy } from "@/lib/game-logic";
 import { GameState, GameSettings, Move } from "@/types/game";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Clock, Play } from "lucide-react";
+import { Clock, PlayIcon } from "lucide-react";
 
 const Play: React.FC = () => {
   const { gameId } = useParams();
@@ -238,7 +237,7 @@ const Play: React.FC = () => {
             </div>
             
             <Button size="lg" onClick={() => setShowSettings(true)} className="mt-4">
-              <Play className="mr-2 h-4 w-4" /> Start New Game
+              <PlayIcon className="mr-2 h-4 w-4" /> Start New Game
             </Button>
           </div>
         ) : (
