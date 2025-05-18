@@ -23,8 +23,8 @@ const GameBoard: React.FC<GameBoardProps> = ({
   const [highlightedPositions, setHighlightedPositions] = useState<Position[]>([]);
   const [pieceAnimation, setPieceAnimation] = useState<string | null>(null);
   
-  // Calculate board size based on viewport - reduce maximum size from 600px to 500px
-  const boardSize = Math.min(window.innerWidth * 0.7, 500);
+  // Further reduce maximum size from 500px to 420px and viewport multiplier from 0.7 to 0.6
+  const boardSize = Math.min(window.innerWidth * 0.6, 420);
   const cellSize = boardSize / (BOARD_SIZE - 1);
   
   // Set up the grid lines
