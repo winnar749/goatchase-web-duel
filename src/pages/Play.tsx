@@ -392,8 +392,6 @@ const Play: React.FC = () => {
           gameId={gameId}
         />
       </main>
-      
-      <Footer />
     </div>
   );
 };
