@@ -5,7 +5,6 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import GameBoard from "@/components/GameBoard";
 import GameControls from "@/components/GameControls";
-import GameInfo from "@/components/GameInfo";
 import GameSettingsDialog from "@/components/GameSettings";
 import ShareGame from "@/components/ShareGame";
 import { initializeGameState, makeMove, getAIMoveEasy } from "@/lib/game-logic";
@@ -366,18 +365,15 @@ const Play: React.FC = () => {
               </Card>
             </div>
             
-            {/* Game Board and Info - center/right side */}
+            {/* Game Board - center/right side */}
             <div className="flex-1 flex flex-col">
-              <div className="bg-card p-4 rounded-lg flex flex-col items-center mb-4">
+              <div className="bg-card p-4 rounded-lg flex flex-col items-center">
                 <GameBoard 
                   gameState={gameState}
                   onMove={handleMove}
                   readOnly={isPaused}
                 />
               </div>
-              
-              {/* Horizontal GameInfo */}
-              <GameInfo />
             </div>
           </div>
         )}
