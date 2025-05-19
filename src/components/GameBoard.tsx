@@ -170,7 +170,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
           row === col || row + col === BOARD_SIZE - 1 || 
           row === Math.floor(BOARD_SIZE / 2) || col === Math.floor(BOARD_SIZE / 2)) {
         
-        // Check if this position is highlighted
+        // Check if this position is highlighted (valid move)
         const isHighlighted = highlightedPositions.some(
           pos => pos.row === row && pos.col === col
         );
@@ -187,7 +187,26 @@ const GameBoard: React.FC<GameBoardProps> = ({
               zIndex: 20
             }}
             onClick={() => handleIntersectionClick(position)}
-          />
+          >
+            {/* Add green point for valid moves */}
+            {isHighlighted && (
+              <div 
+                className="valid-move-indicator" 
+                style={{
+                  position: 'absolute',
+                  width: '14px',
+                  height: '14px',
+                  backgroundColor: '#10B981', // Green color for the indicator
+                  borderRadius: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  left: '50%',
+                  top: '50%',
+                  boxShadow: '0 0 5px rgba(16, 185, 129, 0.7)',
+                  zIndex: 25
+                }}
+              />
+            )}
+          </div>
         );
       }
     }
