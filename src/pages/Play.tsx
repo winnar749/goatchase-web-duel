@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -10,7 +11,8 @@ import { initializeGameState, makeMove, getAIMoveEasy } from "@/lib/game-logic";
 import { GameState, GameSettings, Move } from "@/types/game";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Clock, PlayIcon } from "lucide-react";
+import { Clock, PlayIcon, User, UserRound } from "lucide-react";
+import { SwitchWithLabel } from "@/components/ui/switch";
 
 const Play: React.FC = () => {
   const { gameId } = useParams();
@@ -24,6 +26,7 @@ const Play: React.FC = () => {
   const [previousStates, setPreviousStates] = useState<GameState[]>([]);
   const [isPaused, setIsPaused] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
+  const [isAIMode, setIsAIMode] = useState(false);
   
   // Timer state
   const [tigerTime, setTigerTime] = useState(600); // 10 minutes in seconds
@@ -33,6 +36,23 @@ const Play: React.FC = () => {
   // UI state
   const [showSettings, setShowSettings] = useState(false);
   const [showShare, setShowShare] = useState(false);
+  
+  // Handle AI mode toggle
+  const handleToggleAI = (checked: boolean) => {
+    setIsAIMode(checked);
+    const newMode = checked ? "ai" : "local";
+    
+    setGameSettings({
+      ...gameSettings,
+      mode: newMode,
+      ...(checked ? { difficulty: "easy", aiModel: "dqn", playerSide: "goat" } : {})
+    });
+    
+    // Update URL and reset the game
+    navigate(`/play/${newMode}`);
+    handleReset();
+    toast.info(`Switched to ${checked ? "AI" : "Human vs Human"} mode`);
+  };
   
   // Load game from URL if gameId is present
   useEffect(() => {
@@ -47,8 +67,10 @@ const Play: React.FC = () => {
           aiModel: "dqn",
           playerSide: "goat" 
         });
+        setIsAIMode(true);
       } else if (gameId === "local") {
         setGameSettings({ mode: "local" });
+        setIsAIMode(false);
       } else if (gameId === "online") {
         setGameSettings({ mode: "online" });
       }
@@ -213,8 +235,10 @@ const Play: React.FC = () => {
     // Update URL based on game mode
     if (newSettings.mode === "ai") {
       navigate("/play/ai");
+      setIsAIMode(true);
     } else if (newSettings.mode === "local") {
       navigate("/play/local");
+      setIsAIMode(false);
     } else if (newSettings.mode === "online") {
       navigate("/play/online");
     }
@@ -264,114 +288,130 @@ const Play: React.FC = () => {
             </Button>
           </div>
         ) : (
-          <div className="flex flex-col md:flex-row gap-4 h-full">
-            {/* Game info sidebar - left side */}
-            <div className="w-full md:w-64 lg:w-72 space-y-3">
-              {/* Game mode and timer header */}
-              <Card className="p-3">
-                <h2 className="text-xl font-bold mb-2">
-                  {gameSettings.mode === "local" ? "Local Game" : 
-                  gameSettings.mode === "ai" ? `AI (${gameSettings.aiModel})` :
-                  "Online Game"}
-                </h2>
-                
-                {/* Timer display */}
-                <div className="flex flex-col space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div className={`w-3 h-3 rounded-full ${gameState.turn === 'tiger' ? 'bg-game-tiger animate-pulse' : 'bg-gray-300'} mr-2`}></div>
-                      <span className="text-muted-foreground">Tigers</span>
-                    </div>
-                    <div className="flex items-center">
-                      <Clock className="h-4 w-4 mr-1" />
-                      <span className={`font-mono ${tigerTime < 60 ? 'text-red-500' : ''}`}>
-                        {formatTime(tigerTime)}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div className={`w-3 h-3 rounded-full ${gameState.turn === 'goat' ? 'bg-game-goat animate-pulse' : 'bg-gray-300'} mr-2`}></div>
-                      <span className="text-muted-foreground">Goats</span>
-                    </div>
-                    <div className="flex items-center">
-                      <Clock className="h-4 w-4 mr-1" />
-                      <span className={`font-mono ${goatTime < 60 ? 'text-red-500' : ''}`}>
-                        {formatTime(goatTime)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-              
-              {/* Game status */}
-              <Card className="p-3">
-                <div className="text-center font-medium bg-secondary p-2 rounded-md">
-                  {gameState.winner ? 
-                    `Game Over - ${gameState.winner === 'tiger' ? 'Tigers' : 'Goats'} Win!` : 
-                    `${gameState.turn === 'tiger' ? 'Tigers' : 'Goats'} Turn ${
-                    gameState.phase === 'placement' ? 
-                      `- Placement (${gameState.goatsPlaced}/20)` : 
-                      '- Movement'
-                    }`
-                  }
-                </div>
-              </Card>
-              
-              {/* Game statistics */}
-              <Card className="p-3">
-                <h3 className="font-medium mb-2">Game Statistics</h3>
-                <div className="space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span>Goats Placed:</span>
-                    <span className="font-medium">{gameState.goatsPlaced}/20</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Goats Captured:</span>
-                    <span className="font-medium">{gameState.goatsCaptured}/5</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Phase:</span>
-                    <span className="font-medium">{gameState.phase}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Moves Made:</span>
-                    <span className="font-medium">{gameState.moveHistory.length}</span>
-                  </div>
-                </div>
-              </Card>
-              
-              {/* Game controls */}
-              <Card className="p-3">
-                <div className="flex flex-wrap gap-2">
-                  <Button size="sm" variant="outline" onClick={handleUndo} disabled={previousStates.length === 0}>
-                    Undo
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={handlePause}>
-                    {isPaused ? 'Resume' : 'Pause'}
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => setShowSettings(true)}>
-                    Settings
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={handleShare}>
-                    Share
-                  </Button>
-                  <Button size="sm" variant="destructive" onClick={handleReset}>
-                    Reset
-                  </Button>
-                </div>
-              </Card>
+          <div className="flex flex-col items-center">
+            {/* Game mode switch */}
+            <div className="w-full max-w-4xl mb-4">
+              <div className="bg-card p-3 rounded-lg flex justify-center">
+                <SwitchWithLabel 
+                  checked={isAIMode}
+                  onCheckedChange={handleToggleAI}
+                  labelLeft={<div className="flex items-center gap-1"><User size={16} /> Human vs Human</div>}
+                  labelRight={<div className="flex items-center gap-1"><UserRound size={16} /> Human vs AI</div>}
+                  disabled={gameState.moveHistory.length > 0}
+                />
+              </div>
             </div>
             
-            {/* Game Board - center/right side */}
-            <div className="flex-1 flex flex-col">
-              <div className="bg-card p-4 rounded-lg flex flex-col items-center">
-                <GameBoard 
-                  gameState={gameState}
-                  onMove={handleMove}
-                  readOnly={isPaused}
-                />
+            {/* Game content - centered layout */}
+            <div className="flex flex-col md:flex-row gap-4 w-full max-w-4xl">
+              {/* Game info sidebar - left side */}
+              <div className="w-full md:w-64 flex flex-col space-y-3">
+                {/* Game mode and timer header */}
+                <Card className="p-3">
+                  <h2 className="text-xl font-bold mb-2">
+                    {gameSettings.mode === "local" ? "Local Game" : 
+                    gameSettings.mode === "ai" ? `AI (${gameSettings.aiModel})` :
+                    "Online Game"}
+                  </h2>
+                  
+                  {/* Timer display */}
+                  <div className="flex flex-col space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <div className={`w-3 h-3 rounded-full ${gameState.turn === 'tiger' ? 'bg-game-tiger animate-pulse' : 'bg-gray-300'} mr-2`}></div>
+                        <span className="text-muted-foreground">Tigers</span>
+                      </div>
+                      <div className="flex items-center">
+                        <Clock className="h-4 w-4 mr-1" />
+                        <span className={`font-mono ${tigerTime < 60 ? 'text-red-500' : ''}`}>
+                          {formatTime(tigerTime)}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <div className={`w-3 h-3 rounded-full ${gameState.turn === 'goat' ? 'bg-game-goat animate-pulse' : 'bg-gray-300'} mr-2`}></div>
+                        <span className="text-muted-foreground">Goats</span>
+                      </div>
+                      <div className="flex items-center">
+                        <Clock className="h-4 w-4 mr-1" />
+                        <span className={`font-mono ${goatTime < 60 ? 'text-red-500' : ''}`}>
+                          {formatTime(goatTime)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+                
+                {/* Game status */}
+                <Card className="p-3">
+                  <div className="text-center font-medium bg-secondary p-2 rounded-md">
+                    {gameState.winner ? 
+                      `Game Over - ${gameState.winner === 'tiger' ? 'Tigers' : 'Goats'} Win!` : 
+                      `${gameState.turn === 'tiger' ? 'Tigers' : 'Goats'} Turn ${
+                      gameState.phase === 'placement' ? 
+                        `- Placement (${gameState.goatsPlaced}/20)` : 
+                        '- Movement'
+                      }`
+                    }
+                  </div>
+                </Card>
+                
+                {/* Game statistics */}
+                <Card className="p-3">
+                  <h3 className="font-medium mb-2">Game Statistics</h3>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span>Goats Placed:</span>
+                      <span className="font-medium">{gameState.goatsPlaced}/20</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Goats Captured:</span>
+                      <span className="font-medium">{gameState.goatsCaptured}/5</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Phase:</span>
+                      <span className="font-medium">{gameState.phase}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Moves Made:</span>
+                      <span className="font-medium">{gameState.moveHistory.length}</span>
+                    </div>
+                  </div>
+                </Card>
+                
+                {/* Game controls */}
+                <Card className="p-3">
+                  <div className="flex flex-wrap gap-2">
+                    <Button size="sm" variant="outline" onClick={handleUndo} disabled={previousStates.length === 0}>
+                      Undo
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={handlePause}>
+                      {isPaused ? 'Resume' : 'Pause'}
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setShowSettings(true)}>
+                      Settings
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={handleShare}>
+                      Share
+                    </Button>
+                    <Button size="sm" variant="destructive" onClick={handleReset}>
+                      Reset
+                    </Button>
+                  </div>
+                </Card>
+              </div>
+              
+              {/* Game Board - center */}
+              <div className="flex-1 flex flex-col">
+                <div className="bg-card p-4 rounded-lg flex flex-col items-center">
+                  <GameBoard 
+                    gameState={gameState}
+                    onMove={handleMove}
+                    readOnly={isPaused}
+                  />
+                </div>
               </div>
             </div>
           </div>

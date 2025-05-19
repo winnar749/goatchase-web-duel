@@ -1,3 +1,4 @@
+
 import * as React from "react"
 import * as SwitchPrimitives from "@radix-ui/react-switch"
 
@@ -24,4 +25,21 @@ const Switch = React.forwardRef<
 ))
 Switch.displayName = SwitchPrimitives.Root.displayName
 
-export { Switch }
+const SwitchWithLabel = React.forwardRef<
+  React.ElementRef<typeof SwitchPrimitives.Root>,
+  React.ComponentPropsWithoutRef<typeof SwitchPrimitives.Root> & {
+    label?: string;
+    labelLeft?: string;
+    labelRight?: string;
+  }
+>(({ className, label, labelLeft, labelRight, ...props }, ref) => (
+  <div className="flex items-center gap-2">
+    {labelLeft && <span className="text-sm">{labelLeft}</span>}
+    <Switch ref={ref} className={className} {...props} />
+    {labelRight && <span className="text-sm">{labelRight}</span>}
+    {label && <span className="text-sm">{label}</span>}
+  </div>
+))
+SwitchWithLabel.displayName = "SwitchWithLabel"
+
+export { Switch, SwitchWithLabel }
