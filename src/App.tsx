@@ -10,10 +10,12 @@ import Learn from "./pages/Learn";
 import About from "./pages/About";
 import NotFound from "./pages/NotFound";
 
+// Create a new QueryClient instance
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
+    {/* Wrap everything in TooltipProvider */}
     <TooltipProvider>
       <Toaster />
       <Sonner />

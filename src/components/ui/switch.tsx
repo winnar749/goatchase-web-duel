@@ -28,16 +28,16 @@ Switch.displayName = SwitchPrimitives.Root.displayName
 const SwitchWithLabel = React.forwardRef<
   React.ElementRef<typeof SwitchPrimitives.Root>,
   React.ComponentPropsWithoutRef<typeof SwitchPrimitives.Root> & {
-    label?: string;
-    labelLeft?: string;
-    labelRight?: string;
+    label?: React.ReactNode;
+    labelLeft?: React.ReactNode;
+    labelRight?: React.ReactNode;
   }
 >(({ className, label, labelLeft, labelRight, ...props }, ref) => (
   <div className="flex items-center gap-2">
-    {labelLeft && <span className="text-sm">{labelLeft}</span>}
+    {labelLeft && <div className="text-sm">{labelLeft}</div>}
     <Switch ref={ref} className={className} {...props} />
-    {labelRight && <span className="text-sm">{labelRight}</span>}
-    {label && <span className="text-sm">{label}</span>}
+    {labelRight && <div className="text-sm">{labelRight}</div>}
+    {label && <div className="text-sm">{label}</div>}
   </div>
 ))
 SwitchWithLabel.displayName = "SwitchWithLabel"
