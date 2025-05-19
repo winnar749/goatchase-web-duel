@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import Header from "@/components/Header";
-import Footer from "@/components/Footer";
 import GameBoard from "@/components/GameBoard";
 import GameControls from "@/components/GameControls";
 import GameSettingsDialog from "@/components/GameSettings";
