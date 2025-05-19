@@ -17,7 +17,7 @@ const GamePiece: React.FC<GamePieceProps> = ({
   isSelected = false
 }) => {
   // Adjust piece size based on the board size
-  const pieceSize = cellSize * 0.4; // Slightly larger for better visibility
+  const pieceSize = cellSize * 0.5; // Slightly larger for better visibility
   
   // Define styles based on piece type
   let pieceStyles = "";
@@ -42,9 +42,9 @@ const GamePiece: React.FC<GamePieceProps> = ({
       }}
     >
       {type === "tiger" ? (
-        <Cat size={pieceSize * 0.7} color="white" strokeWidth={2} />
+        <Cat size={pieceSize * 0.6} color="white" strokeWidth={2} />
       ) : (
-        <CircleUser size={pieceSize * 0.7} color="white" strokeWidth={2} />
+        <CircleUser size={pieceSize * 0.6} color="white" strokeWidth={2} />
       )}
     </div>
   );

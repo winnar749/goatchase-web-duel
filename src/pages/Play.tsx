@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -267,9 +266,9 @@ const Play: React.FC = () => {
             </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-12 gap-4">
+          <div className="flex flex-col md:flex-row gap-4 h-full">
             {/* Game info sidebar - left side */}
-            <div className="col-span-12 md:col-span-3 space-y-3">
+            <div className="w-full md:w-64 lg:w-72 space-y-3">
               {/* Game mode and timer header */}
               <Card className="p-3">
                 <h2 className="text-xl font-bold mb-2">
@@ -365,22 +364,20 @@ const Play: React.FC = () => {
                   </Button>
                 </div>
               </Card>
-              
-              {/* Game Info */}
-              <div className="hidden md:block">
-                <GameInfo />
-              </div>
             </div>
             
-            {/* Game Board - center/right side */}
-            <div className="col-span-12 md:col-span-9 flex flex-col items-center justify-center">
-              <div className="bg-card p-4 rounded-lg w-full flex flex-col items-center">
+            {/* Game Board and Info - center/right side */}
+            <div className="flex-1 flex flex-col">
+              <div className="bg-card p-4 rounded-lg flex flex-col items-center mb-4">
                 <GameBoard 
                   gameState={gameState}
                   onMove={handleMove}
                   readOnly={isPaused}
                 />
               </div>
+              
+              {/* Horizontal GameInfo */}
+              <GameInfo />
             </div>
           </div>
         )}
