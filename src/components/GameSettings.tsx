@@ -1,10 +1,10 @@
-
 import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { GameSettings, Player, GameMode, GameDifficulty, GameAIModel } from "../types/game";
 
 interface GameSettingsDialogProps {
@@ -34,7 +34,7 @@ const GameSettingsDialog: React.FC<GameSettingsDialogProps> = ({
   
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold">Game Settings</DialogTitle>
         </DialogHeader>
@@ -91,6 +91,7 @@ const GameSettingsDialog: React.FC<GameSettingsDialogProps> = ({
                     <SelectItem value="easy">Easy</SelectItem>
                     <SelectItem value="medium">Medium</SelectItem>
                     <SelectItem value="hard">Hard</SelectItem>
+                    <SelectItem value="custom">Custom Models</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -109,9 +110,54 @@ const GameSettingsDialog: React.FC<GameSettingsDialogProps> = ({
                   <SelectContent>
                     <SelectItem value="dqn">Deep Q-Network (DQN)</SelectItem>
                     <SelectItem value="ppo">Proximal Policy Optimization (PPO)</SelectItem>
+                    <SelectItem value="custom">Custom Trained Models</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+              
+              {(localSettings.difficulty === 'custom' || localSettings.aiModel === 'custom') && (
+                <div className="grid gap-4 p-4 border rounded-md">
+                  <Label className="text-sm font-medium">Custom Model URLs (ONNX format)</Label>
+                  <div className="grid gap-2">
+                    <Label htmlFor="tiger-model" className="text-xs">Tiger Model URL:</Label>
+                    <Input
+                      id="tiger-model"
+                      type="url"
+                      placeholder="https://example.com/tiger-model.onnx"
+                      value={localSettings.customModelUrls?.tiger || ''}
+                      onChange={(e) => setLocalSettings({
+                        ...localSettings,
+                        customModelUrls: {
+                          ...localSettings.customModelUrls,
+                          tiger: e.target.value,
+                          goat: localSettings.customModelUrls?.goat || ''
+                        }
+                      })}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="goat-model" className="text-xs">Goat Model URL:</Label>
+                    <Input
+                      id="goat-model"
+                      type="url"
+                      placeholder="https://example.com/goat-model.onnx"
+                      value={localSettings.customModelUrls?.goat || ''}
+                      onChange={(e) => setLocalSettings({
+                        ...localSettings,
+                        customModelUrls: {
+                          ...localSettings.customModelUrls,
+                          goat: e.target.value,
+                          tiger: localSettings.customModelUrls?.tiger || ''
+                        }
+                      })}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Upload your ONNX models to a public URL and paste the links here. 
+                    You can convert PyTorch .pth files to ONNX format using torch.onnx.export().
+                  </p>
+                </div>
+              )}
               
               <div className="grid gap-2">
                 <Label htmlFor="playerSide-trigger" className="text-left">Play As</Label>

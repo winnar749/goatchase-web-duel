@@ -1,9 +1,8 @@
-
 export type Player = 'goat' | 'tiger';
 export type GamePhase = 'placement' | 'movement';
 export type GameMode = 'local' | 'ai' | 'online';
-export type GameDifficulty = 'easy' | 'medium' | 'hard';
-export type GameAIModel = 'dqn' | 'ppo';
+export type GameDifficulty = 'easy' | 'medium' | 'hard' | 'custom';
+export type GameAIModel = 'dqn' | 'ppo' | 'custom';
 
 export type Position = {
   row: number;
@@ -40,4 +39,8 @@ export type GameSettings = {
   difficulty?: GameDifficulty;
   aiModel?: GameAIModel;
   playerSide?: Player;
+  customModelUrls?: {
+    tiger: string;
+    goat: string;
+  };
 };

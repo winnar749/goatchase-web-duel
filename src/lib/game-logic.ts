@@ -1,4 +1,3 @@
-
 import { GameState, Position, Player, Move } from "../types/game";
 
 // Constants
@@ -392,5 +391,18 @@ export function getAIMoveEasy(gameState: GameState): Move {
     
     // If no valid moves (shouldn't happen), return a dummy move
     return { from: pieces[0], to: pieces[0] };
+  }
+}
+
+// Add new AI move function that uses custom models
+export async function getAIMoveCustom(gameState: GameState, player: 'tiger' | 'goat'): Promise<Move> {
+  const { aiService } = await import('./ai-service');
+  
+  if (aiService.isModelsLoaded()) {
+    return await aiService.getAIMove(gameState, player);
+  } else {
+    // Fallback to easy AI if models aren't loaded
+    console.warn('Custom AI models not loaded, using fallback AI');
+    return getAIMoveEasy(gameState);
   }
 }

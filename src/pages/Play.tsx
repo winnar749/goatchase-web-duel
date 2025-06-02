@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -36,6 +35,9 @@ const Play: React.FC = () => {
   // UI state
   const [showSettings, setShowSettings] = useState(false);
   const [showShare, setShowShare] = useState(false);
+  
+  // Model loading state
+  const [modelsLoading, setModelsLoading] = useState(false);
   
   // Handle AI mode toggle
   const handleToggleAI = (checked: boolean) => {
@@ -111,7 +113,36 @@ const Play: React.FC = () => {
     }
   }, [tigerTime, goatTime, gameState]);
   
-  // AI move logic
+  // Load custom models when settings change
+  useEffect(() => {
+    const loadCustomModels = async () => {
+      if (
+        gameSettings.mode === "ai" && 
+        (gameSettings.difficulty === 'custom' || gameSettings.aiModel === 'custom') &&
+        gameSettings.customModelUrls?.tiger &&
+        gameSettings.customModelUrls?.goat
+      ) {
+        setModelsLoading(true);
+        try {
+          const { aiService } = await import('../lib/ai-service');
+          await aiService.loadModels(
+            gameSettings.customModelUrls.tiger,
+            gameSettings.customModelUrls.goat
+          );
+          toast.success("Custom AI models loaded successfully!");
+        } catch (error) {
+          console.error('Failed to load custom models:', error);
+          toast.error("Failed to load custom models. Using fallback AI.");
+        } finally {
+          setModelsLoading(false);
+        }
+      }
+    };
+    
+    loadCustomModels();
+  }, [gameSettings.customModelUrls, gameSettings.difficulty, gameSettings.aiModel]);
+  
+  // AI move logic - updated to use custom models
   useEffect(() => {
     // Only make AI moves if game has started, it's AI mode, it's AI's turn, and game is not paused
     if (
@@ -119,27 +150,37 @@ const Play: React.FC = () => {
       gameSettings.mode === "ai" && 
       gameSettings.playerSide !== gameState.turn && 
       !isPaused &&
-      !gameState.winner
+      !gameState.winner &&
+      !modelsLoading
     ) {
       // Add a small delay to make it feel more natural
-      const timeoutId = setTimeout(() => {
-        // Get AI move based on difficulty
-        let aiMove: Move;
-        
-        if (gameSettings.difficulty === "easy") {
-          aiMove = getAIMoveEasy(gameState);
-        } else {
-          // For medium and hard, we'd use the more advanced models
-          // but for now, let's use the easy AI
-          aiMove = getAIMoveEasy(gameState);
+      const timeoutId = setTimeout(async () => {
+        try {
+          let aiMove;
+          
+          if (gameSettings.difficulty === 'custom' || gameSettings.aiModel === 'custom') {
+            const { getAIMoveCustom } = await import('../lib/game-logic');
+            aiMove = await getAIMoveCustom(gameState, gameState.turn);
+          } else if (gameSettings.difficulty === "easy") {
+            const { getAIMoveEasy } = await import('../lib/game-logic');
+            aiMove = getAIMoveEasy(gameState);
+          } else {
+            // For medium and hard, we'd use the more advanced models
+            // but for now, let's use the easy AI
+            const { getAIMoveEasy } = await import('../lib/game-logic');
+            aiMove = getAIMoveEasy(gameState);
+          }
+          
+          handleMove(aiMove);
+        } catch (error) {
+          console.error('AI move failed:', error);
+          toast.error('AI move failed, skipping turn');
         }
-        
-        handleMove(aiMove);
       }, 700);
       
       return () => clearTimeout(timeoutId);
     }
-  }, [gameState, gameSettings, isPaused, gameStarted]);
+  }, [gameState, gameSettings, isPaused, gameStarted, modelsLoading]);
   
   // Format time for display
   const formatTime = (seconds: number) => {
