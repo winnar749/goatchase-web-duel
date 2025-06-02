@@ -107,9 +107,6 @@ const GameBoard: React.FC<GameBoardProps> = ({
         }
       }
       setHighlightedPositions(validPlacements);
-    } else if (gameState.phase === 'movement' && !gameState.selectedPiece) {
-      // Clear highlights when no piece is selected in movement phase
-      setHighlightedPositions([]);
     } else {
       setHighlightedPositions([]);
     }
@@ -121,12 +118,9 @@ const GameBoard: React.FC<GameBoardProps> = ({
     
     const { selectedPiece, turn, phase } = gameState;
     
-    console.log('Intersection clicked:', position, 'Turn:', turn, 'Phase:', phase, 'Selected:', selectedPiece);
-    
     // If it's placement phase for goats
     if (phase === 'placement' && turn === 'goat') {
       if (isValidMove(gameState, null, position)) {
-        console.log('Making goat placement move');
         onMove({ from: null, to: position });
         return;
       }
@@ -136,7 +130,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
     if (selectedPiece) {
       // Check if the clicked position is a valid move
       if (highlightedPositions.some(pos => pos.row === position.row && pos.col === position.col)) {
-        console.log('Making move from selected piece to valid position');
+        // Make the move
         onMove({ from: selectedPiece, to: position });
         return;
       }
@@ -144,7 +138,6 @@ const GameBoard: React.FC<GameBoardProps> = ({
       // If clicked on another own piece, select it instead
       const clickedPiece = gameState.board[position.row][position.col];
       if (clickedPiece === turn) {
-        console.log('Selecting different piece of same type');
         onMove({ 
           from: position, 
           to: position, 
@@ -154,7 +147,6 @@ const GameBoard: React.FC<GameBoardProps> = ({
       }
       
       // If clicked elsewhere, deselect
-      console.log('Deselecting piece');
       onMove({ 
         from: null, 
         to: position, 
@@ -163,17 +155,18 @@ const GameBoard: React.FC<GameBoardProps> = ({
       return;
     }
     
-    // If no piece is selected, check if clicking on current player's piece
-    const clickedPiece = gameState.board[position.row][position.col];
-    if (clickedPiece === turn) {
-      console.log('Selecting piece for current player');
-      // Select the piece
-      onMove({ 
-        from: position, 
-        to: position, 
-        selection: true
-      });
-      return;
+    // If no piece is selected and in movement phase, check if clicking on current player's piece
+    if (phase === 'movement') {
+      const clickedPiece = gameState.board[position.row][position.col];
+      if (clickedPiece === turn) {
+        // Select the piece
+        onMove({ 
+          from: position, 
+          to: position, 
+          selection: true
+        });
+        return;
+      }
     }
   };
   
