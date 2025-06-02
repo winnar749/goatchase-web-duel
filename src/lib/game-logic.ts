@@ -1,3 +1,4 @@
+
 import { GameState, Position, Player, Move } from "../types/game";
 
 // Constants
@@ -132,12 +133,12 @@ export function isValidMove(gameState: GameState, from: Position | null, to: Pos
       const middleRow = (from.row + to.row) / 2;
       const middleCol = (from.col + to.col) / 2;
       
-      // Check if the middle position is a valid intersection
-      const middlePos = { row: middleRow, col: middleCol };
+      // Check if the middle position is a valid intersection and contains a goat
       if (
         Number.isInteger(middleRow) && 
         Number.isInteger(middleCol) && 
-        isValidIntersection(middlePos) &&
+        isValidPosition({ row: middleRow, col: middleCol }) &&
+        isValidIntersection({ row: middleRow, col: middleCol }) &&
         board[middleRow][middleCol] === 'goat'
       ) {
         return true;
@@ -169,7 +170,7 @@ export function getValidMovesForPosition(gameState: GameState, position: Positio
   
   // For tigers, check if they can capture (jump over goats)
   if (piece === 'tiger') {
-    // Check in all directions for possible jumps
+    // Check in all valid directions for possible jumps
     const directions = [
       { row: -1, col: 0 }, // up
       { row: 1, col: 0 },  // down
@@ -222,7 +223,7 @@ export function canTigerCapture(gameState: GameState): boolean {
     for (let col = 0; col < BOARD_SIZE; col++) {
       if (board[row][col] === 'tiger') {
         const position = { row, col };
-        const validMoves = getValidMovesForPosition({ ...gameState, turn: 'tiger' }, position);
+        const validMoves = getValidMovesForPosition(gameState, position);
         
         // Check if any valid move is a capture
         for (const move of validMoves) {
@@ -254,7 +255,7 @@ export function isPlayerTrapped(gameState: GameState, player: Player): boolean {
     for (let col = 0; col < BOARD_SIZE; col++) {
       if (board[row][col] === player) {
         const position = { row, col };
-        const validMoves = getValidMovesForPosition({ ...gameState, turn: player }, position);
+        const validMoves = getValidMovesForPosition(gameState, position);
         if (validMoves.length > 0) {
           return false;
         }
@@ -276,25 +277,27 @@ export function makeMove(gameState: GameState, move: Move): GameState {
   }
   
   const { from, to } = move;
-  let { board, phase, turn, goatsPlaced, goatsCaptured, moveHistory, winner } = { ...gameState };
+  let { board, phase, turn, goatsPlaced, goatsCaptured, moveHistory, winner } = gameState;
   
   // Create a deep copy of the board
   const newBoard = board.map(row => [...row]);
   const newMoveHistory = [...moveHistory, move];
   let newCaptured = goatsCaptured;
   let capture: Position[] = [];
+  let newPhase = phase;
+  let newGoatsPlaced = goatsPlaced;
   
   // If in placement phase for goats
   if (phase === 'placement' && turn === 'goat' && from === null) {
     newBoard[to.row][to.col] = 'goat';
-    goatsPlaced++;
+    newGoatsPlaced++;
     
     // Check if all goats have been placed
-    if (goatsPlaced === TOTAL_GOATS) {
-      phase = 'movement';
+    if (newGoatsPlaced === TOTAL_GOATS) {
+      newPhase = 'movement';
     }
-  } else if (phase === 'movement' && from) {
-    // Move the piece
+  } else if (from) {
+    // Movement phase - move the piece
     newBoard[to.row][to.col] = newBoard[from.row][from.col];
     newBoard[from.row][from.col] = null;
     
@@ -325,18 +328,31 @@ export function makeMove(gameState: GameState, move: Move): GameState {
   // Check win conditions
   if (newCaptured >= GOATS_TO_WIN) {
     winner = 'tiger';
-  } else if (phase === 'movement' && isPlayerTrapped({ ...gameState, board: newBoard, turn: 'tiger' }, 'tiger')) {
+  } else if (newPhase === 'movement' && isPlayerTrapped({ ...gameState, board: newBoard, turn: 'tiger' }, 'tiger')) {
     winner = 'goat';
   }
   
   // Switch turns
-  const newTurn = turn === 'goat' ? 'tiger' : 'goat';
+  let newTurn = turn;
+  if (phase === 'placement' && turn === 'goat') {
+    // In placement phase, after goat places, it's tiger's turn (but tigers don't place)
+    // So we switch to tiger only if we're moving to movement phase
+    if (newPhase === 'movement') {
+      newTurn = 'tiger';
+    } else {
+      // Stay with goat for next placement
+      newTurn = 'goat';
+    }
+  } else {
+    // In movement phase, switch turns normally
+    newTurn = turn === 'goat' ? 'tiger' : 'goat';
+  }
   
   return {
     board: newBoard,
-    phase,
+    phase: newPhase,
     turn: newTurn,
-    goatsPlaced,
+    goatsPlaced: newGoatsPlaced,
     goatsCaptured: newCaptured,
     selectedPiece: null,
     validMoves: [],
