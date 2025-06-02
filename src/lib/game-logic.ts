@@ -1,3 +1,4 @@
+
 import { GameState, Position, Player, Move } from "../types/game";
 
 // Constants
@@ -110,7 +111,7 @@ export function isValidMove(gameState: GameState, from: Position | null, to: Pos
   }
   
   // Handle movement phase
-  if (from) {
+  if (from && phase === 'movement') {
     // Ensure 'from' position contains the current player's piece
     if (board[from.row][from.col] !== turn) {
       return false;
@@ -151,10 +152,11 @@ export function isValidMove(gameState: GameState, from: Position | null, to: Pos
 // Get valid moves for a position
 export function getValidMovesForPosition(gameState: GameState, position: Position): Position[] {
   const validMoves: Position[] = [];
-  const { board, turn } = gameState;
+  const { board } = gameState;
   
-  // Ensure the position contains the current player's piece
-  if (board[position.row][position.col] !== turn) {
+  // Ensure the position contains a piece
+  const piece = board[position.row][position.col];
+  if (!piece) {
     return [];
   }
   
@@ -167,7 +169,7 @@ export function getValidMovesForPosition(gameState: GameState, position: Positio
   }
   
   // For tigers, check if they can capture (jump over goats)
-  if (turn === 'tiger') {
+  if (piece === 'tiger') {
     // Check in all directions for possible jumps
     const directions = [
       { row: -1, col: 0 }, // up
@@ -284,7 +286,7 @@ export function makeMove(gameState: GameState, move: Move): GameState {
   let capture: Position[] = [];
   
   // If in placement phase for goats
-  if (phase === 'placement' && turn === 'goat') {
+  if (phase === 'placement' && turn === 'goat' && from === null) {
     newBoard[to.row][to.col] = 'goat';
     goatsPlaced++;
     
@@ -292,27 +294,25 @@ export function makeMove(gameState: GameState, move: Move): GameState {
     if (goatsPlaced === TOTAL_GOATS) {
       phase = 'movement';
     }
-  } else {
+  } else if (phase === 'movement' && from) {
     // Move the piece
-    if (from) {
-      newBoard[to.row][to.col] = newBoard[from.row][from.col];
-      newBoard[from.row][from.col] = null;
+    newBoard[to.row][to.col] = newBoard[from.row][from.col];
+    newBoard[from.row][from.col] = null;
+    
+    // Check for tiger capture
+    if (turn === 'tiger') {
+      const deltaRow = Math.abs(to.row - from.row);
+      const deltaCol = Math.abs(to.col - from.col);
       
-      // Check for tiger capture
-      if (turn === 'tiger') {
-        const deltaRow = Math.abs(to.row - from.row);
-        const deltaCol = Math.abs(to.col - from.col);
+      if (deltaRow > 1 || deltaCol > 1) {
+        // It's a jump, so there's a capture
+        const midRow = (from.row + to.row) / 2;
+        const midCol = (from.col + to.col) / 2;
         
-        if (deltaRow > 1 || deltaCol > 1) {
-          // It's a jump, so there's a capture
-          const midRow = (from.row + to.row) / 2;
-          const midCol = (from.col + to.col) / 2;
-          
-          if (Number.isInteger(midRow) && Number.isInteger(midCol) && newBoard[midRow][midCol] === 'goat') {
-            newBoard[midRow][midCol] = null;
-            newCaptured++;
-            capture = [{ row: midRow, col: midCol }];
-          }
+        if (Number.isInteger(midRow) && Number.isInteger(midCol) && newBoard[midRow][midCol] === 'goat') {
+          newBoard[midRow][midCol] = null;
+          newCaptured++;
+          capture = [{ row: midRow, col: midCol }];
         }
       }
     }

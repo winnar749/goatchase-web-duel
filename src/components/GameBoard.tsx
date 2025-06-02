@@ -155,16 +155,18 @@ const GameBoard: React.FC<GameBoardProps> = ({
       return;
     }
     
-    // If no piece is selected, check if clicking on current player's piece
-    const clickedPiece = gameState.board[position.row][position.col];
-    if (clickedPiece === turn) {
-      // Select the piece
-      onMove({ 
-        from: position, 
-        to: position, 
-        selection: true
-      });
-      return;
+    // If no piece is selected and in movement phase, check if clicking on current player's piece
+    if (phase === 'movement') {
+      const clickedPiece = gameState.board[position.row][position.col];
+      if (clickedPiece === turn) {
+        // Select the piece
+        onMove({ 
+          from: position, 
+          to: position, 
+          selection: true
+        });
+        return;
+      }
     }
   };
   
