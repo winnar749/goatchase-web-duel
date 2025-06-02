@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { GameState, Position, Player, Move } from "../types/game";
 import { 
@@ -114,7 +113,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
       }
     }
     
-    // If a piece is already selected, check if the clicked position is a valid move
+    // If a piece is already selected
     if (selectedPiece) {
       // Check if the clicked position is a valid move
       if (highlightedPositions.some(pos => pos.row === position.row && pos.col === position.col)) {
@@ -143,13 +142,10 @@ const GameBoard: React.FC<GameBoardProps> = ({
       return;
     }
     
-    // If the clicked position contains a piece of the current player
+    // If no piece is selected, check if clicking on current player's piece
     const clickedPiece = gameState.board[position.row][position.col];
     if (clickedPiece === turn) {
-      // Select the piece and show valid moves
-      const validMoves = getValidMovesForPosition(gameState, position);
-      
-      // Update game state with selected piece through onMove callback
+      // Select the piece
       onMove({ 
         from: position, 
         to: position, 
@@ -184,7 +180,11 @@ const GameBoard: React.FC<GameBoardProps> = ({
               left: `${col * cellSize}px`,
               top: `${row * cellSize}px`,
               transform: 'translate(-50%, -50%)',
-              zIndex: 20
+              zIndex: 20,
+              width: '20px',
+              height: '20px',
+              borderRadius: '50%',
+              cursor: 'pointer'
             }}
             onClick={() => handleIntersectionClick(position)}
           >

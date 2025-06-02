@@ -1,7 +1,6 @@
 
 import React from "react";
 import { Player, Position } from "../types/game";
-import { Cat, CircleUser } from "lucide-react"; // Using Cat for tiger and CircleUser for goat
 
 interface GamePieceProps {
   type: Player;
@@ -41,11 +40,9 @@ const GamePiece: React.FC<GamePieceProps> = ({
         cursor: 'pointer'
       }}
     >
-      {type === "tiger" ? (
-        <Cat size={pieceSize * 0.6} color="white" strokeWidth={2} />
-      ) : (
-        <CircleUser size={pieceSize * 0.6} color="white" strokeWidth={2} />
-      )}
+      <span className="text-white font-bold text-lg">
+        {type === "tiger" ? "T" : "G"}
+      </span>
     </div>
   );
 };
