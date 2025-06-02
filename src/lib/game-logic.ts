@@ -1,4 +1,3 @@
-
 import { GameState, Position, Player, Move } from "../types/game";
 
 // Constants
@@ -159,7 +158,7 @@ export function getValidMovesForPosition(gameState: GameState, position: Positio
     return [];
   }
   
-  // Check adjacent positions
+  // Check adjacent positions for normal moves
   const adjacentPositions = getAdjacentPositions(position);
   for (const pos of adjacentPositions) {
     if (board[pos.row][pos.col] === null) {
@@ -167,7 +166,7 @@ export function getValidMovesForPosition(gameState: GameState, position: Positio
     }
   }
   
-  // For tigers, check if they can capture
+  // For tigers, check if they can capture (jump over goats)
   if (turn === 'tiger') {
     // Check in all directions for possible jumps
     const directions = [
@@ -327,7 +326,7 @@ export function makeMove(gameState: GameState, move: Move): GameState {
   // Check win conditions
   if (newCaptured >= GOATS_TO_WIN) {
     winner = 'tiger';
-  } else if (isPlayerTrapped(gameState, 'tiger')) {
+  } else if (phase === 'movement' && isPlayerTrapped({ ...gameState, board: newBoard, turn: 'tiger' }, 'tiger')) {
     winner = 'goat';
   }
   

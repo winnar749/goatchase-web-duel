@@ -1,10 +1,12 @@
+
 import React, { useState, useEffect } from "react";
 import { GameState, Position, Player, Move } from "../types/game";
 import { 
   isValidMove, 
   getValidMovesForPosition, 
   BOARD_SIZE,
-  makeMove
+  makeMove,
+  isValidIntersection
 } from "../lib/game-logic";
 import GamePiece from "./GamePiece";
 
@@ -20,12 +22,10 @@ const GameBoard: React.FC<GameBoardProps> = ({
   readOnly = false
 }) => {
   const [highlightedPositions, setHighlightedPositions] = useState<Position[]>([]);
-  const [pieceAnimation, setPieceAnimation] = useState<string | null>(null);
   
   // Use a more responsive approach to sizing based on the viewport
-  // Calculate board size relative to viewport, but with a maximum limit
   const viewportWidth = Math.min(window.innerWidth, 1200);
-  const boardSizeMultiplier = viewportWidth < 768 ? 0.85 : 0.55; // Higher percentage on mobile
+  const boardSizeMultiplier = viewportWidth < 768 ? 0.85 : 0.55;
   const boardSize = Math.min(viewportWidth * boardSizeMultiplier, 380);
   const cellSize = boardSize / (BOARD_SIZE - 1);
   
@@ -89,15 +89,28 @@ const GameBoard: React.FC<GameBoardProps> = ({
     setHighlightedPositions([]);
   }, [gameState.turn, gameState.phase]);
   
-  // Update highlighted positions when selected piece changes
+  // Update highlighted positions when selected piece changes or for placement phase
   useEffect(() => {
     if (gameState.selectedPiece) {
+      // Show valid moves for the selected piece
       const validMoves = getValidMovesForPosition(gameState, gameState.selectedPiece);
       setHighlightedPositions(validMoves);
+    } else if (gameState.phase === 'placement' && gameState.turn === 'goat') {
+      // Show all valid placement positions for goats
+      const validPlacements: Position[] = [];
+      for (let row = 0; row < BOARD_SIZE; row++) {
+        for (let col = 0; col < BOARD_SIZE; col++) {
+          const position = { row, col };
+          if (isValidIntersection(position) && gameState.board[row][col] === null) {
+            validPlacements.push(position);
+          }
+        }
+      }
+      setHighlightedPositions(validPlacements);
     } else {
       setHighlightedPositions([]);
     }
-  }, [gameState.selectedPiece]);
+  }, [gameState.selectedPiece, gameState.phase, gameState.turn, gameState.board]);
   
   // Handle intersection click
   const handleIntersectionClick = (position: Position) => {
@@ -162,10 +175,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
       const position = { row, col };
       
       // Check if this is a valid intersection
-      if (row === 0 || row === BOARD_SIZE - 1 || col === 0 || col === BOARD_SIZE - 1 || 
-          row === col || row + col === BOARD_SIZE - 1 || 
-          row === Math.floor(BOARD_SIZE / 2) || col === Math.floor(BOARD_SIZE / 2)) {
-        
+      if (isValidIntersection(position)) {
         // Check if this position is highlighted (valid move)
         const isHighlighted = highlightedPositions.some(
           pos => pos.row === row && pos.col === col
