@@ -118,6 +118,8 @@ const GameBoard: React.FC<GameBoardProps> = ({
     
     const { selectedPiece, turn, phase } = gameState;
     
+    console.log('Intersection clicked:', position, 'Turn:', turn, 'Phase:', phase, 'Selected:', selectedPiece);
+    
     // If it's placement phase for goats
     if (phase === 'placement' && turn === 'goat') {
       if (isValidMove(gameState, null, position)) {
@@ -131,6 +133,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
       // Check if the clicked position is a valid move
       if (highlightedPositions.some(pos => pos.row === position.row && pos.col === position.col)) {
         // Make the move
+        console.log('Making move from', selectedPiece, 'to', position);
         onMove({ from: selectedPiece, to: position });
         return;
       }
@@ -138,6 +141,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
       // If clicked on another own piece, select it instead
       const clickedPiece = gameState.board[position.row][position.col];
       if (clickedPiece === turn) {
+        console.log('Selecting new piece at', position);
         onMove({ 
           from: position, 
           to: position, 
@@ -147,6 +151,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
       }
       
       // If clicked elsewhere, deselect
+      console.log('Deselecting piece');
       onMove({ 
         from: null, 
         to: position, 
@@ -155,18 +160,17 @@ const GameBoard: React.FC<GameBoardProps> = ({
       return;
     }
     
-    // If no piece is selected and in movement phase, check if clicking on current player's piece
-    if (phase === 'movement') {
-      const clickedPiece = gameState.board[position.row][position.col];
-      if (clickedPiece === turn) {
-        // Select the piece
-        onMove({ 
-          from: position, 
-          to: position, 
-          selection: true
-        });
-        return;
-      }
+    // If no piece is selected, check if clicking on current player's piece
+    const clickedPiece = gameState.board[position.row][position.col];
+    if (clickedPiece === turn) {
+      // Select the piece
+      console.log('Selecting piece at', position, 'for player', turn);
+      onMove({ 
+        from: position, 
+        to: position, 
+        selection: true
+      });
+      return;
     }
   };
   

@@ -1,3 +1,4 @@
+
 import { GameState, Position, Player, Move } from "../types/game";
 
 // Constants
@@ -57,33 +58,49 @@ export function isValidIntersection(position: Position): boolean {
   return false;
 }
 
-// Get adjacent positions
+// Get adjacent positions with proper connectivity
 export function getAdjacentPositions(position: Position): Position[] {
   const { row, col } = position;
   const adjacentPositions: Position[] = [];
   
-  // Horizontal and vertical adjacents
-  const directions = [
+  // Basic directions (horizontal and vertical)
+  const basicDirections = [
     { row: -1, col: 0 }, // up
     { row: 1, col: 0 },  // down
     { row: 0, col: -1 }, // left
     { row: 0, col: 1 }   // right
   ];
   
-  // Add diagonal adjacents if on a diagonal intersection
-  if (row === col || row + col === BOARD_SIZE - 1) {
-    directions.push(
-      { row: -1, col: -1 }, // top-left
-      { row: -1, col: 1 },  // top-right
-      { row: 1, col: -1 },  // bottom-left
-      { row: 1, col: 1 }    // bottom-right
-    );
-  }
-  
-  for (const dir of directions) {
+  // Add basic adjacent positions
+  for (const dir of basicDirections) {
     const newPos = { row: row + dir.row, col: col + dir.col };
     if (isValidPosition(newPos) && isValidIntersection(newPos)) {
       adjacentPositions.push(newPos);
+    }
+  }
+  
+  // Add diagonal adjacents based on position
+  const diagonalDirections = [
+    { row: -1, col: -1 }, // top-left
+    { row: -1, col: 1 },  // top-right
+    { row: 1, col: -1 },  // bottom-left
+    { row: 1, col: 1 }    // bottom-right
+  ];
+  
+  // Diagonal moves are valid from certain positions
+  const isDiagonalPosition = (row === col) || (row + col === BOARD_SIZE - 1) || 
+                            (row === Math.floor(BOARD_SIZE / 2) && col === Math.floor(BOARD_SIZE / 2));
+  
+  if (isDiagonalPosition) {
+    for (const dir of diagonalDirections) {
+      const newPos = { row: row + dir.row, col: col + dir.col };
+      if (isValidPosition(newPos) && isValidIntersection(newPos)) {
+        // Check if the diagonal connection is valid
+        const targetIsDiagonal = (newPos.row === newPos.col) || (newPos.row + newPos.col === BOARD_SIZE - 1);
+        if (targetIsDiagonal || newPos.row === Math.floor(BOARD_SIZE / 2) || newPos.col === Math.floor(BOARD_SIZE / 2)) {
+          adjacentPositions.push(newPos);
+        }
+      }
     }
   }
   
@@ -105,8 +122,8 @@ export function isValidMove(gameState: GameState, from: Position | null, to: Pos
   }
   
   // Handle placement phase for goats
-  if (phase === 'placement' && turn === 'goat') {
-    return from === null; // In placement phase, 'from' should be null
+  if (phase === 'placement' && turn === 'goat' && from === null) {
+    return true;
   }
   
   // Handle movement phase
@@ -116,7 +133,7 @@ export function isValidMove(gameState: GameState, from: Position | null, to: Pos
       return false;
     }
     
-    // For normal moves, check if the destination is adjacent
+    // Check for normal adjacent moves
     const adjacentPositions = getAdjacentPositions(from);
     const isAdjacent = adjacentPositions.some(
       pos => pos.row === to.row && pos.col === to.col
@@ -126,36 +143,68 @@ export function isValidMove(gameState: GameState, from: Position | null, to: Pos
       return true;
     }
     
-    // For tiger jumps, check if it's jumping over a goat
+    // Check for tiger jumps (captures)
     if (turn === 'tiger') {
-      // Calculate the middle position
-      const middleRow = (from.row + to.row) / 2;
-      const middleCol = (from.col + to.col) / 2;
-      
-      // Check if the middle position is a valid intersection
-      const middlePos = { row: middleRow, col: middleCol };
-      if (
-        Number.isInteger(middleRow) && 
-        Number.isInteger(middleCol) && 
-        isValidIntersection(middlePos) &&
-        board[middleRow][middleCol] === 'goat'
-      ) {
-        return true;
-      }
+      return isValidTigerJump(gameState, from, to);
     }
   }
   
   return false;
 }
 
+// Check if a tiger jump is valid
+function isValidTigerJump(gameState: GameState, from: Position, to: Position): boolean {
+  const { board } = gameState;
+  
+  // Calculate direction and distance
+  const deltaRow = to.row - from.row;
+  const deltaCol = to.col - from.col;
+  
+  // Must be exactly 2 steps in one or both directions
+  if (Math.abs(deltaRow) > 2 || Math.abs(deltaCol) > 2) {
+    return false;
+  }
+  
+  // Must be jumping over exactly one position
+  if (Math.abs(deltaRow) !== 2 && Math.abs(deltaCol) !== 2 && 
+      !(Math.abs(deltaRow) === 2 && Math.abs(deltaCol) === 0) &&
+      !(Math.abs(deltaRow) === 0 && Math.abs(deltaCol) === 2)) {
+    return false;
+  }
+  
+  // Calculate the middle position
+  const middleRow = from.row + Math.sign(deltaRow);
+  const middleCol = from.col + Math.sign(deltaCol);
+  const middlePos = { row: middleRow, col: middleCol };
+  
+  // Check if middle position is valid and contains a goat
+  if (!isValidIntersection(middlePos) || board[middleRow][middleCol] !== 'goat') {
+    return false;
+  }
+  
+  // Check if the jump path is valid (both positions must be connected)
+  const adjacentToFrom = getAdjacentPositions(from);
+  const middleIsAdjacentToFrom = adjacentToFrom.some(pos => pos.row === middleRow && pos.col === middleCol);
+  
+  const adjacentToMiddle = getAdjacentPositions(middlePos);
+  const toIsAdjacentToMiddle = adjacentToMiddle.some(pos => pos.row === to.row && pos.col === to.col);
+  
+  return middleIsAdjacentToFrom && toIsAdjacentToMiddle;
+}
+
 // Get valid moves for a position
 export function getValidMovesForPosition(gameState: GameState, position: Position): Position[] {
   const validMoves: Position[] = [];
-  const { board } = gameState;
+  const { board, phase, turn } = gameState;
   
   // Ensure the position contains a piece
   const piece = board[position.row][position.col];
   if (!piece) {
+    return [];
+  }
+  
+  // Only show moves for the current player's pieces
+  if (piece !== turn) {
     return [];
   }
   
@@ -167,44 +216,14 @@ export function getValidMovesForPosition(gameState: GameState, position: Positio
     }
   }
   
-  // For tigers, check if they can capture (jump over goats)
-  if (piece === 'tiger') {
-    // Check in all directions for possible jumps
-    const directions = [
-      { row: -1, col: 0 }, // up
-      { row: 1, col: 0 },  // down
-      { row: 0, col: -1 }, // left
-      { row: 0, col: 1 },  // right
-      { row: -1, col: -1 }, // top-left
-      { row: -1, col: 1 },  // top-right
-      { row: 1, col: -1 },  // bottom-left
-      { row: 1, col: 1 }    // bottom-right
-    ];
-    
-    for (const dir of directions) {
-      // Check if there's a goat in this direction
-      const midPos = {
-        row: position.row + dir.row,
-        col: position.col + dir.col
-      };
-      
-      if (
-        isValidPosition(midPos) && 
-        isValidIntersection(midPos) && 
-        board[midPos.row][midPos.col] === 'goat'
-      ) {
-        // Check if there's an empty space after the goat
-        const jumpPos = {
-          row: midPos.row + dir.row,
-          col: midPos.col + dir.col
-        };
-        
-        if (
-          isValidPosition(jumpPos) && 
-          isValidIntersection(jumpPos) && 
-          board[jumpPos.row][jumpPos.col] === null
-        ) {
-          validMoves.push(jumpPos);
+  // For tigers, check for possible jumps
+  if (piece === 'tiger' && phase === 'movement') {
+    // Check all possible jump positions
+    for (let row = 0; row < BOARD_SIZE; row++) {
+      for (let col = 0; col < BOARD_SIZE; col++) {
+        const jumpTo = { row, col };
+        if (board[row][col] === null && isValidTigerJump(gameState, position, jumpTo)) {
+          validMoves.push(jumpTo);
         }
       }
     }
@@ -226,10 +245,7 @@ export function canTigerCapture(gameState: GameState): boolean {
         
         // Check if any valid move is a capture
         for (const move of validMoves) {
-          // Calculate if it's a jump (capture)
-          const deltaRow = Math.abs(move.row - row);
-          const deltaCol = Math.abs(move.col - col);
-          if (deltaRow > 1 || deltaCol > 1) {
+          if (isValidTigerJump(gameState, position, move)) {
             return true;
           }
         }
@@ -276,45 +292,49 @@ export function makeMove(gameState: GameState, move: Move): GameState {
   }
   
   const { from, to } = move;
-  let { board, phase, turn, goatsPlaced, goatsCaptured, moveHistory, winner } = { ...gameState };
+  let newGameState = { ...gameState };
   
   // Create a deep copy of the board
-  const newBoard = board.map(row => [...row]);
-  const newMoveHistory = [...moveHistory, move];
-  let newCaptured = goatsCaptured;
+  const newBoard = gameState.board.map(row => [...row]);
+  const newMoveHistory = [...gameState.moveHistory, move];
+  let newCaptured = gameState.goatsCaptured;
   let capture: Position[] = [];
   
-  // If in placement phase for goats
-  if (phase === 'placement' && turn === 'goat' && from === null) {
+  // Handle placement phase for goats
+  if (gameState.phase === 'placement' && gameState.turn === 'goat' && from === null) {
     newBoard[to.row][to.col] = 'goat';
-    goatsPlaced++;
+    newGameState.goatsPlaced++;
     
     // Check if all goats have been placed
-    if (goatsPlaced === TOTAL_GOATS) {
-      phase = 'movement';
+    if (newGameState.goatsPlaced === TOTAL_GOATS) {
+      newGameState.phase = 'movement';
     }
-  } else if (phase === 'movement' && from) {
+    
+    // Switch turn to tiger
+    newGameState.turn = 'tiger';
+  } 
+  // Handle movement phase
+  else if (gameState.phase === 'movement' && from) {
     // Move the piece
     newBoard[to.row][to.col] = newBoard[from.row][from.col];
     newBoard[from.row][from.col] = null;
     
     // Check for tiger capture
-    if (turn === 'tiger') {
-      const deltaRow = Math.abs(to.row - from.row);
-      const deltaCol = Math.abs(to.col - from.col);
+    if (gameState.turn === 'tiger' && isValidTigerJump(gameState, from, to)) {
+      const deltaRow = to.row - from.row;
+      const deltaCol = to.col - from.col;
+      const midRow = from.row + Math.sign(deltaRow);
+      const midCol = from.col + Math.sign(deltaCol);
       
-      if (deltaRow > 1 || deltaCol > 1) {
-        // It's a jump, so there's a capture
-        const midRow = (from.row + to.row) / 2;
-        const midCol = (from.col + to.col) / 2;
-        
-        if (Number.isInteger(midRow) && Number.isInteger(midCol) && newBoard[midRow][midCol] === 'goat') {
-          newBoard[midRow][midCol] = null;
-          newCaptured++;
-          capture = [{ row: midRow, col: midCol }];
-        }
+      if (newBoard[midRow][midCol] === 'goat') {
+        newBoard[midRow][midCol] = null;
+        newCaptured++;
+        capture = [{ row: midRow, col: midCol }];
       }
     }
+    
+    // Switch turns
+    newGameState.turn = gameState.turn === 'goat' ? 'tiger' : 'goat';
   }
   
   // Update move with capture information
@@ -323,20 +343,16 @@ export function makeMove(gameState: GameState, move: Move): GameState {
   }
   
   // Check win conditions
+  let winner = null;
   if (newCaptured >= GOATS_TO_WIN) {
     winner = 'tiger';
-  } else if (phase === 'movement' && isPlayerTrapped({ ...gameState, board: newBoard, turn: 'tiger' }, 'tiger')) {
+  } else if (newGameState.phase === 'movement' && isPlayerTrapped({ ...newGameState, board: newBoard, turn: 'tiger' }, 'tiger')) {
     winner = 'goat';
   }
   
-  // Switch turns
-  const newTurn = turn === 'goat' ? 'tiger' : 'goat';
-  
   return {
+    ...newGameState,
     board: newBoard,
-    phase,
-    turn: newTurn,
-    goatsPlaced,
     goatsCaptured: newCaptured,
     selectedPiece: null,
     validMoves: [],
