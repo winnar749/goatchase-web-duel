@@ -1,7 +1,7 @@
 
 import * as ort from 'onnxruntime-web';
 import { GameState, Move, Position } from '../types/game';
-import { getValidMovesForPosition, isValidMove } from './game-logic';
+import { getValidMovesForPosition, isValidMove, BOARD_SIZE } from './game-logic';
 
 export class AIService {
   private tigerModel: ort.InferenceSession | null = null;
@@ -14,12 +14,16 @@ export class AIService {
     this.isLoading = true;
     try {
       console.log('Loading AI models...');
+      console.log('Tiger model URL:', tigerModelUrl);
+      console.log('Goat model URL:', goatModelUrl);
       
       // Load the ONNX models
       this.tigerModel = await ort.InferenceSession.create(tigerModelUrl);
       this.goatModel = await ort.InferenceSession.create(goatModelUrl);
       
       console.log('AI models loaded successfully');
+      console.log('Tiger model input names:', this.tigerModel.inputNames);
+      console.log('Goat model input names:', this.goatModel.inputNames);
     } catch (error) {
       console.error('Failed to load AI models:', error);
       throw error;
@@ -30,36 +34,71 @@ export class AIService {
 
   private gameStateToInput(gameState: GameState): Float32Array {
     // Convert game state to model input format
-    // This is a simple flattened representation - adjust based on your model's input format
-    const input = new Float32Array(25 + 4); // 5x5 board + 4 additional features
+    // Create a comprehensive input representation
+    const boardSize = BOARD_SIZE * BOARD_SIZE;
+    const additionalFeatures = 8;
+    const input = new Float32Array(boardSize * 3 + additionalFeatures);
     
-    // Flatten the board (0 = empty, 1 = goat, -1 = tiger)
-    for (let row = 0; row < 5; row++) {
-      for (let col = 0; col < 5; col++) {
-        const piece = gameState.board[row][col];
-        input[row * 5 + col] = piece === 'goat' ? 1 : piece === 'tiger' ? -1 : 0;
+    let index = 0;
+    
+    // Channel 1: Goat positions (1 for goat, 0 for empty/tiger)
+    for (let row = 0; row < BOARD_SIZE; row++) {
+      for (let col = 0; col < BOARD_SIZE; col++) {
+        input[index++] = gameState.board[row][col] === 'goat' ? 1 : 0;
       }
     }
     
-    // Add additional features
-    input[25] = gameState.phase === 'placement' ? 1 : 0;
-    input[26] = gameState.turn === 'goat' ? 1 : 0;
-    input[27] = gameState.goatsPlaced / 20; // Normalized
-    input[28] = gameState.goatsCaptured / 5; // Normalized
+    // Channel 2: Tiger positions (1 for tiger, 0 for empty/goat)
+    for (let row = 0; row < BOARD_SIZE; row++) {
+      for (let col = 0; col < BOARD_SIZE; col++) {
+        input[index++] = gameState.board[row][col] === 'tiger' ? 1 : 0;
+      }
+    }
+    
+    // Channel 3: Empty positions (1 for empty, 0 for occupied)
+    for (let row = 0; row < BOARD_SIZE; row++) {
+      for (let col = 0; col < BOARD_SIZE; col++) {
+        input[index++] = gameState.board[row][col] === null ? 1 : 0;
+      }
+    }
+    
+    // Additional features
+    input[index++] = gameState.phase === 'placement' ? 1 : 0;
+    input[index++] = gameState.turn === 'goat' ? 1 : 0;
+    input[index++] = gameState.turn === 'tiger' ? 1 : 0;
+    input[index++] = gameState.goatsPlaced / 20; // Normalized
+    input[index++] = gameState.goatsCaptured / 5; // Normalized
+    input[index++] = gameState.moveHistory.length / 100; // Normalized move count
+    input[index++] = gameState.selectedPiece ? 1 : 0;
+    input[index++] = gameState.winner ? 1 : 0;
     
     return input;
   }
 
+  private async runModelInference(model: ort.InferenceSession, input: Float32Array): Promise<Float32Array> {
+    try {
+      const inputName = model.inputNames[0];
+      const feeds = { [inputName]: new ort.Tensor('float32', input, [1, input.length]) };
+      const results = await model.run(feeds);
+      
+      const outputName = Object.keys(results)[0];
+      const outputTensor = results[outputName];
+      return outputTensor.data as Float32Array;
+    } catch (error) {
+      console.error('Model inference failed:', error);
+      throw error;
+    }
+  }
+
   private outputToMove(output: Float32Array, gameState: GameState, player: 'tiger' | 'goat'): Move {
-    // Convert model output to a valid move
-    // This assumes your model outputs action probabilities
-    // Adjust based on your model's output format
+    console.log('Converting model output to move for player:', player);
+    console.log('Output length:', output.length);
     
     if (gameState.phase === 'placement' && player === 'goat') {
       // Find valid placement positions
       const validPositions: Position[] = [];
-      for (let row = 0; row < 5; row++) {
-        for (let col = 0; col < 5; col++) {
+      for (let row = 0; row < BOARD_SIZE; row++) {
+        for (let col = 0; col < BOARD_SIZE; col++) {
           const position = { row, col };
           if (isValidMove(gameState, null, position)) {
             validPositions.push(position);
@@ -71,26 +110,68 @@ export class AIService {
         throw new Error('No valid placement positions');
       }
       
-      // Select position based on model output (simplified)
-      const selectedIndex = Math.floor(Math.random() * validPositions.length);
-      return { from: null, to: validPositions[selectedIndex] };
+      // Use model output to select position
+      // If output is action probabilities, find the best valid position
+      let bestPosition = validPositions[0];
+      let bestScore = -Infinity;
+      
+      for (const pos of validPositions) {
+        const posIndex = pos.row * BOARD_SIZE + pos.col;
+        if (posIndex < output.length) {
+          const score = output[posIndex];
+          if (score > bestScore) {
+            bestScore = score;
+            bestPosition = pos;
+          }
+        }
+      }
+      
+      console.log('Selected placement position:', bestPosition, 'with score:', bestScore);
+      return { from: null, to: bestPosition };
     } else {
       // Movement phase - find pieces and their valid moves
       const pieces: Position[] = [];
-      for (let row = 0; row < 5; row++) {
-        for (let col = 0; col < 5; col++) {
+      for (let row = 0; row < BOARD_SIZE; row++) {
+        for (let col = 0; col < BOARD_SIZE; col++) {
           if (gameState.board[row][col] === player) {
             pieces.push({ row, col });
           }
         }
       }
       
+      let bestMove: Move | null = null;
+      let bestScore = -Infinity;
+      
+      for (const piece of pieces) {
+        const validMoves = getValidMovesForPosition(gameState, piece);
+        for (const move of validMoves) {
+          // Calculate move index in output
+          const fromIndex = piece.row * BOARD_SIZE + piece.col;
+          const toIndex = move.row * BOARD_SIZE + move.col;
+          const moveIndex = fromIndex * BOARD_SIZE + toIndex;
+          
+          if (moveIndex < output.length) {
+            const score = output[moveIndex];
+            if (score > bestScore) {
+              bestScore = score;
+              bestMove = { from: piece, to: move };
+            }
+          }
+        }
+      }
+      
+      if (bestMove) {
+        console.log('Selected move:', bestMove, 'with score:', bestScore);
+        return bestMove;
+      }
+      
+      // Fallback to first available move
       for (const piece of pieces) {
         const validMoves = getValidMovesForPosition(gameState, piece);
         if (validMoves.length > 0) {
-          // Select move based on model output (simplified)
-          const selectedMove = validMoves[Math.floor(Math.random() * validMoves.length)];
-          return { from: piece, to: selectedMove };
+          const fallbackMove = { from: piece, to: validMoves[0] };
+          console.log('Using fallback move:', fallbackMove);
+          return fallbackMove;
         }
       }
       
@@ -106,15 +187,13 @@ export class AIService {
     }
 
     try {
+      console.log(`Getting AI move for ${player}`);
       const input = this.gameStateToInput(gameState);
+      console.log('Input tensor shape:', input.length);
       
       // Run inference
-      const feeds = { input: new ort.Tensor('float32', input, [1, input.length]) };
-      const results = await model.run(feeds);
-      
-      // Get the output tensor
-      const outputTensor = results[Object.keys(results)[0]];
-      const output = outputTensor.data as Float32Array;
+      const output = await this.runModelInference(model, input);
+      console.log('Model output received, length:', output.length);
       
       return this.outputToMove(output, gameState, player);
     } catch (error) {
@@ -125,10 +204,12 @@ export class AIService {
   }
 
   private getRandomMove(gameState: GameState, player: 'tiger' | 'goat'): Move {
+    console.log('Using random fallback move for', player);
+    
     if (gameState.phase === 'placement' && player === 'goat') {
       const validPositions: Position[] = [];
-      for (let row = 0; row < 5; row++) {
-        for (let col = 0; col < 5; col++) {
+      for (let row = 0; row < BOARD_SIZE; row++) {
+        for (let col = 0; col < BOARD_SIZE; col++) {
           const position = { row, col };
           if (isValidMove(gameState, null, position)) {
             validPositions.push(position);
@@ -136,12 +217,16 @@ export class AIService {
         }
       }
       
+      if (validPositions.length === 0) {
+        throw new Error('No valid placement positions');
+      }
+      
       const randomIndex = Math.floor(Math.random() * validPositions.length);
       return { from: null, to: validPositions[randomIndex] };
     } else {
       const pieces: Position[] = [];
-      for (let row = 0; row < 5; row++) {
-        for (let col = 0; col < 5; col++) {
+      for (let row = 0; row < BOARD_SIZE; row++) {
+        for (let col = 0; col < BOARD_SIZE; col++) {
           if (gameState.board[row][col] === player) {
             pieces.push({ row, col });
           }
@@ -162,6 +247,10 @@ export class AIService {
 
   isModelsLoaded(): boolean {
     return this.tigerModel !== null && this.goatModel !== null;
+  }
+
+  isLoading(): boolean {
+    return this.isLoading;
   }
 }
 

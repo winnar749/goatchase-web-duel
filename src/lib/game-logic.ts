@@ -1,4 +1,3 @@
-
 import { GameState, Position, Player, Move } from "../types/game";
 
 // Constants
@@ -418,13 +417,108 @@ export function getAIMoveEasy(gameState: GameState): Move {
 
 // Add new AI move function that uses custom models
 export async function getAIMoveCustom(gameState: GameState, player: 'tiger' | 'goat'): Promise<Move> {
-  const { aiService } = await import('./ai-service');
-  
-  if (aiService.isModelsLoaded()) {
-    return await aiService.getAIMove(gameState, player);
-  } else {
-    // Fallback to easy AI if models aren't loaded
-    console.warn('Custom AI models not loaded, using fallback AI');
+  try {
+    const { aiService } = await import('./ai-service');
+    
+    if (aiService.isModelsLoaded()) {
+      console.log(`Using ONNX model for ${player} move`);
+      return await aiService.getAIMove(gameState, player);
+    } else if (aiService.isLoading()) {
+      console.log('Models are still loading, using fallback AI');
+      return getAIMoveEasy(gameState);
+    } else {
+      throw new Error('Models not loaded');
+    }
+  } catch (error) {
+    console.error(`Error getting AI move for ${player}:`, error);
+    console.log('Falling back to easy AI');
     return getAIMoveEasy(gameState);
+  }
+}
+
+// Enhanced AI move function that tries different difficulty levels
+export async function getAIMoveAdvanced(gameState: GameState, player: 'tiger' | 'goat', difficulty: string = 'easy'): Promise<Move> {
+  try {
+    switch (difficulty) {
+      case 'custom':
+        return await getAIMoveCustom(gameState, player);
+      case 'hard':
+        // For now, use custom models for hard difficulty too
+        return await getAIMoveCustom(gameState, player);
+      case 'medium':
+        // Enhanced easy AI with some strategic thinking
+        return getAIMoveStrategic(gameState, player);
+      case 'easy':
+      default:
+        return getAIMoveEasy(gameState);
+    }
+  } catch (error) {
+    console.error('Advanced AI move failed, using easy AI:', error);
+    return getAIMoveEasy(gameState);
+  }
+}
+
+// Strategic AI that considers captures and blocks
+function getAIMoveStrategic(gameState: GameState, player: 'tiger' | 'goat'): Move {
+  const { phase, turn } = gameState;
+  
+  if (phase === 'placement' && player === 'goat') {
+    // Strategic placement: try to block tigers or create defensive positions
+    const emptyPositions: Position[] = [];
+    const strategicPositions: Position[] = [];
+    
+    for (let row = 0; row < BOARD_SIZE; row++) {
+      for (let col = 0; col < BOARD_SIZE; col++) {
+        const position = { row, col };
+        if (gameState.board[row][col] === null && isValidIntersection(position)) {
+          emptyPositions.push(position);
+          
+          // Prefer center and edge positions
+          if (row === 2 && col === 2) {
+            strategicPositions.push(position);
+          } else if (row === 0 || row === 4 || col === 0 || col === 4) {
+            strategicPositions.push(position);
+          }
+        }
+      }
+    }
+    
+    const positions = strategicPositions.length > 0 ? strategicPositions : emptyPositions;
+    const randomIndex = Math.floor(Math.random() * positions.length);
+    return { from: null, to: positions[randomIndex] };
+  } else {
+    // Strategic movement: prioritize captures for tigers, blocks for goats
+    const pieces: Position[] = [];
+    for (let row = 0; row < BOARD_SIZE; row++) {
+      for (let col = 0; col < BOARD_SIZE; col++) {
+        if (gameState.board[row][col] === player) {
+          pieces.push({ row, col });
+        }
+      }
+    }
+    
+    // For tigers, prioritize captures
+    if (player === 'tiger') {
+      for (const piece of pieces) {
+        const validMoves = getValidMovesForPosition(gameState, piece);
+        for (const move of validMoves) {
+          if (isValidTigerJump(gameState, piece, move)) {
+            return { from: piece, to: move };
+          }
+        }
+      }
+    }
+    
+    // Find any valid move
+    for (const piece of pieces) {
+      const validMoves = getValidMovesForPosition(gameState, piece);
+      if (validMoves.length > 0) {
+        const randomIndex = Math.floor(Math.random() * validMoves.length);
+        return { from: piece, to: validMoves[randomIndex] };
+      }
+    }
+    
+    // Fallback
+    return { from: pieces[0], to: pieces[0] };
   }
 }

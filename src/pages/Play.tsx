@@ -159,22 +159,33 @@ const Play: React.FC = () => {
           let aiMove;
           
           if (gameSettings.difficulty === 'custom' || gameSettings.aiModel === 'custom') {
+            console.log('Using custom ONNX models for AI move');
             const { getAIMoveCustom } = await import('../lib/game-logic');
             aiMove = await getAIMoveCustom(gameState, gameState.turn);
-          } else if (gameSettings.difficulty === "easy") {
-            const { getAIMoveEasy } = await import('../lib/game-logic');
-            aiMove = getAIMoveEasy(gameState);
+          } else if (gameSettings.difficulty === "hard") {
+            console.log('Using hard AI (ONNX models)');
+            const { getAIMoveAdvanced } = await import('../lib/game-logic');
+            aiMove = await getAIMoveAdvanced(gameState, gameState.turn, 'hard');
+          } else if (gameSettings.difficulty === "medium") {
+            console.log('Using medium AI (strategic)');
+            const { getAIMoveAdvanced } = await import('../lib/game-logic');
+            aiMove = await getAIMoveAdvanced(gameState, gameState.turn, 'medium');
           } else {
-            // For medium and hard, we'd use the more advanced models
-            // but for now, let's use the easy AI
+            console.log('Using easy AI');
             const { getAIMoveEasy } = await import('../lib/game-logic');
             aiMove = getAIMoveEasy(gameState);
           }
           
+          console.log('AI generated move:', aiMove);
           handleMove(aiMove);
         } catch (error) {
           console.error('AI move failed:', error);
           toast.error('AI move failed, skipping turn');
+          // Switch turn manually if AI fails
+          setGameState(prev => ({ 
+            ...prev, 
+            turn: prev.turn === 'tiger' ? 'goat' : 'tiger' 
+          }));
         }
       }, 700);
       
