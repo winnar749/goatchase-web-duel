@@ -94,6 +94,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
     if (gameState.selectedPiece) {
       // Show valid moves for the selected piece
       const validMoves = getValidMovesForPosition(gameState, gameState.selectedPiece);
+      console.log('Valid moves for selected piece:', validMoves);
       setHighlightedPositions(validMoves);
     } else if (gameState.phase === 'placement' && gameState.turn === 'goat') {
       // Show all valid placement positions for goats
@@ -123,6 +124,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
     // If it's placement phase for goats
     if (phase === 'placement' && turn === 'goat') {
       if (isValidMove(gameState, null, position)) {
+        console.log('Making goat placement move');
         onMove({ from: null, to: position });
         return;
       }

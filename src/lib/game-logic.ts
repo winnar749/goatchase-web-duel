@@ -195,16 +195,11 @@ function isValidTigerJump(gameState: GameState, from: Position, to: Position): b
 // Get valid moves for a position
 export function getValidMovesForPosition(gameState: GameState, position: Position): Position[] {
   const validMoves: Position[] = [];
-  const { board, phase, turn } = gameState;
+  const { board } = gameState;
   
   // Ensure the position contains a piece
   const piece = board[position.row][position.col];
   if (!piece) {
-    return [];
-  }
-  
-  // Only show moves for the current player's pieces
-  if (piece !== turn) {
     return [];
   }
   
@@ -217,7 +212,7 @@ export function getValidMovesForPosition(gameState: GameState, position: Positio
   }
   
   // For tigers, check for possible jumps
-  if (piece === 'tiger' && phase === 'movement') {
+  if (piece === 'tiger') {
     // Check all possible jump positions
     for (let row = 0; row < BOARD_SIZE; row++) {
       for (let col = 0; col < BOARD_SIZE; col++) {
@@ -241,7 +236,7 @@ export function canTigerCapture(gameState: GameState): boolean {
     for (let col = 0; col < BOARD_SIZE; col++) {
       if (board[row][col] === 'tiger') {
         const position = { row, col };
-        const validMoves = getValidMovesForPosition({ ...gameState, turn: 'tiger' }, position);
+        const validMoves = getValidMovesForPosition(gameState, position);
         
         // Check if any valid move is a capture
         for (const move of validMoves) {
@@ -270,7 +265,7 @@ export function isPlayerTrapped(gameState: GameState, player: Player): boolean {
     for (let col = 0; col < BOARD_SIZE; col++) {
       if (board[row][col] === player) {
         const position = { row, col };
-        const validMoves = getValidMovesForPosition({ ...gameState, turn: player }, position);
+        const validMoves = getValidMovesForPosition(gameState, position);
         if (validMoves.length > 0) {
           return false;
         }
@@ -283,8 +278,11 @@ export function isPlayerTrapped(gameState: GameState, player: Player): boolean {
 
 // Make a move and return the updated game state
 export function makeMove(gameState: GameState, move: Move): GameState {
+  console.log('Making move:', move, 'Current turn:', gameState.turn, 'Phase:', gameState.phase);
+  
   // If this is just a selection, not an actual move
   if (move.selection) {
+    console.log('Selection move, updating selected piece to:', move.from);
     return {
       ...gameState,
       selectedPiece: move.from
@@ -302,19 +300,23 @@ export function makeMove(gameState: GameState, move: Move): GameState {
   
   // Handle placement phase for goats
   if (gameState.phase === 'placement' && gameState.turn === 'goat' && from === null) {
+    console.log('Placing goat at:', to);
     newBoard[to.row][to.col] = 'goat';
     newGameState.goatsPlaced++;
     
     // Check if all goats have been placed
     if (newGameState.goatsPlaced === TOTAL_GOATS) {
+      console.log('All goats placed, switching to movement phase');
       newGameState.phase = 'movement';
     }
     
     // Switch turn to tiger
     newGameState.turn = 'tiger';
+    console.log('Switching turn to tiger');
   } 
   // Handle movement phase
-  else if (gameState.phase === 'movement' && from) {
+  else if (from) {
+    console.log('Movement phase - moving piece from', from, 'to', to);
     // Move the piece
     newBoard[to.row][to.col] = newBoard[from.row][from.col];
     newBoard[from.row][from.col] = null;
@@ -326,6 +328,7 @@ export function makeMove(gameState: GameState, move: Move): GameState {
       const midRow = from.row + Math.sign(deltaRow);
       const midCol = from.col + Math.sign(deltaCol);
       
+      console.log('Tiger jump detected, capturing goat at:', { row: midRow, col: midCol });
       if (newBoard[midRow][midCol] === 'goat') {
         newBoard[midRow][midCol] = null;
         newCaptured++;
@@ -335,6 +338,7 @@ export function makeMove(gameState: GameState, move: Move): GameState {
     
     // Switch turns
     newGameState.turn = gameState.turn === 'goat' ? 'tiger' : 'goat';
+    console.log('Switching turn to:', newGameState.turn);
   }
   
   // Update move with capture information
@@ -346,8 +350,10 @@ export function makeMove(gameState: GameState, move: Move): GameState {
   let winner = null;
   if (newCaptured >= GOATS_TO_WIN) {
     winner = 'tiger';
+    console.log('Tigers win by capturing enough goats');
   } else if (newGameState.phase === 'movement' && isPlayerTrapped({ ...newGameState, board: newBoard, turn: 'tiger' }, 'tiger')) {
     winner = 'goat';
+    console.log('Goats win by trapping tigers');
   }
   
   return {
