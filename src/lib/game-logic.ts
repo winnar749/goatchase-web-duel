@@ -120,13 +120,13 @@ export function isValidMove(gameState: GameState, from: Position | null, to: Pos
     return false;
   }
   
-  // Handle placement phase for goats
+  // Handle placement phase for goats only
   if (phase === 'placement' && turn === 'goat' && from === null) {
     return true;
   }
   
-  // Handle movement phase
-  if (from && phase === 'movement') {
+  // Handle movement phase OR tiger movement during placement
+  if (from) {
     // Ensure 'from' position contains the current player's piece
     if (board[from.row][from.col] !== turn) {
       return false;
@@ -313,7 +313,7 @@ export function makeMove(gameState: GameState, move: Move): GameState {
     newGameState.turn = 'tiger';
     console.log('Switching turn to tiger');
   } 
-  // Handle movement phase
+  // Handle movement phase OR tiger movement during placement
   else if (from) {
     console.log('Movement phase - moving piece from', from, 'to', to);
     // Move the piece
@@ -335,8 +335,14 @@ export function makeMove(gameState: GameState, move: Move): GameState {
       }
     }
     
-    // Switch turns
-    newGameState.turn = gameState.turn === 'goat' ? 'tiger' : 'goat';
+    // Switch turns - Fixed logic for proper turn switching
+    if (gameState.phase === 'placement') {
+      // During placement phase, always switch to the other player
+      newGameState.turn = gameState.turn === 'goat' ? 'tiger' : 'goat';
+    } else {
+      // During movement phase, switch turns normally
+      newGameState.turn = gameState.turn === 'goat' ? 'tiger' : 'goat';
+    }
     console.log('Switching turn to:', newGameState.turn);
   }
   
