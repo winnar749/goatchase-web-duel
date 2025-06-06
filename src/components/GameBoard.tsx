@@ -23,136 +23,81 @@ const GameBoard: React.FC<GameBoardProps> = ({
 }) => {
   const [highlightedPositions, setHighlightedPositions] = useState<Position[]>([]);
   
-  // Responsive board sizing
+  // Use a more responsive approach to sizing based on the viewport
   const viewportWidth = Math.min(window.innerWidth, 1200);
   const boardSizeMultiplier = viewportWidth < 768 ? 0.85 : 0.55;
-  const boardSize = Math.min(viewportWidth * boardSizeMultiplier, 400);
+  const boardSize = Math.min(viewportWidth * boardSizeMultiplier, 380);
   const cellSize = boardSize / (BOARD_SIZE - 1);
   
-  // Generate board lines for BaghChal layout
-  const generateBoardLines = () => {
-    const lines = [];
-    
-    // Horizontal lines
-    for (let row = 0; row < BOARD_SIZE; row++) {
-      lines.push(
-        <line
-          key={`h-${row}`}
-          x1={0}
-          y1={row * cellSize}
-          x2={boardSize}
-          y2={row * cellSize}
-          stroke="#8B4513"
-          strokeWidth="2"
-        />
-      );
-    }
-    
-    // Vertical lines
-    for (let col = 0; col < BOARD_SIZE; col++) {
-      lines.push(
-        <line
-          key={`v-${col}`}
-          x1={col * cellSize}
-          y1={0}
-          x2={col * cellSize}
-          y2={boardSize}
-          stroke="#8B4513"
-          strokeWidth="2"
-        />
-      );
-    }
-    
-    // Diagonal lines
-    // Main diagonals (full board)
-    lines.push(
-      <line
-        key="d-main-1"
-        x1={0}
-        y1={0}
-        x2={boardSize}
-        y2={boardSize}
-        stroke="#8B4513"
-        strokeWidth="2"
-      />
-    );
-    lines.push(
-      <line
-        key="d-main-2"
-        x1={0}
-        y1={boardSize}
-        x2={boardSize}
-        y2={0}
-        stroke="#8B4513"
-        strokeWidth="2"
-      />
-    );
-    
-    // Quarter diagonals
-    const half = cellSize * 2;
-    const center = cellSize * 2;
-    
-    // Top-left quarter
-    lines.push(
-      <line
-        key="d-tl"
-        x1={0}
-        y1={0}
-        x2={half}
-        y2={half}
-        stroke="#8B4513"
-        strokeWidth="2"
-      />
-    );
-    
-    // Top-right quarter
-    lines.push(
-      <line
-        key="d-tr"
-        x1={boardSize}
-        y1={0}
-        x2={center}
-        y2={half}
-        stroke="#8B4513"
-        strokeWidth="2"
-      />
-    );
-    
-    // Bottom-left quarter
-    lines.push(
-      <line
-        key="d-bl"
-        x1={0}
-        y1={boardSize}
-        x2={half}
-        y2={center}
-        stroke="#8B4513"
-        strokeWidth="2"
-      />
-    );
-    
-    // Bottom-right quarter
-    lines.push(
-      <line
-        key="d-br"
-        x1={boardSize}
-        y1={boardSize}
-        x2={center}
-        y2={center}
-        stroke="#8B4513"
-        strokeWidth="2"
-      />
-    );
-    
-    return lines;
-  };
+  // Set up the grid lines
+  const gridLines = [];
   
-  // Update highlighted positions
+  // Horizontal lines
+  for (let i = 0; i < BOARD_SIZE; i++) {
+    gridLines.push(
+      <div 
+        key={`h-${i}`} 
+        className="board-line horizontal-line" 
+        style={{ 
+          top: `${i * cellSize}px`, 
+          left: 0, 
+          width: `${boardSize}px`
+        }} 
+      />
+    );
+  }
+  
+  // Vertical lines
+  for (let i = 0; i < BOARD_SIZE; i++) {
+    gridLines.push(
+      <div 
+        key={`v-${i}`} 
+        className="board-line vertical-line" 
+        style={{ 
+          left: `${i * cellSize}px`, 
+          top: 0, 
+          height: `${boardSize}px`
+        }} 
+      />
+    );
+  }
+  
+  // Diagonal lines
+  gridLines.push(
+    <div 
+      key="d-1" 
+      className="board-line diagonal-line" 
+      style={{ 
+        width: `${Math.sqrt(2) * boardSize}px`,
+        transform: `translateX(-${(Math.sqrt(2) * boardSize - boardSize) / 2}px) rotate(45deg)`
+      }} 
+    />
+  );
+  gridLines.push(
+    <div 
+      key="d-2" 
+      className="board-line diagonal-line" 
+      style={{ 
+        width: `${Math.sqrt(2) * boardSize}px`,
+        transform: `translateX(-${(Math.sqrt(2) * boardSize - boardSize) / 2}px) rotate(-45deg)`
+      }} 
+    />
+  );
+  
+  // Clear highlighted positions when turn changes or game state updates
+  useEffect(() => {
+    setHighlightedPositions([]);
+  }, [gameState.turn, gameState.phase]);
+  
+  // Update highlighted positions when selected piece changes or for placement phase
   useEffect(() => {
     if (gameState.selectedPiece) {
+      // Show valid moves for the selected piece
       const validMoves = getValidMovesForPosition(gameState, gameState.selectedPiece);
+      console.log('Valid moves for selected piece:', validMoves);
       setHighlightedPositions(validMoves);
     } else if (gameState.phase === 'placement' && gameState.turn === 'goat') {
+      // Show all valid placement positions for goats during placement
       const validPlacements: Position[] = [];
       for (let row = 0; row < BOARD_SIZE; row++) {
         for (let col = 0; col < BOARD_SIZE; col++) {
@@ -177,16 +122,17 @@ const GameBoard: React.FC<GameBoardProps> = ({
     
     console.log('Intersection clicked:', position, 'Turn:', turn, 'Phase:', phase, 'Selected:', selectedPiece, 'Clicked piece:', clickedPiece);
     
-    // If a piece is selected
+    // If a piece is already selected
     if (selectedPiece) {
-      // Check if clicked position is a valid move
+      // Check if the clicked position is a valid move
       if (highlightedPositions.some(pos => pos.row === position.row && pos.col === position.col)) {
+        // Make the move
         console.log('Making move from', selectedPiece, 'to', position);
         onMove({ from: selectedPiece, to: position });
         return;
       }
       
-      // If clicked on another piece of current player, select it
+      // If clicked on another piece of the current player, select it instead
       if (clickedPiece === turn) {
         console.log('Selecting new piece at', position);
         onMove({ 
@@ -197,7 +143,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
         return;
       }
       
-      // Deselect if clicked elsewhere
+      // If clicked elsewhere, deselect
       console.log('Deselecting piece');
       onMove({ 
         from: null, 
@@ -207,8 +153,8 @@ const GameBoard: React.FC<GameBoardProps> = ({
       return;
     }
     
-    // No piece selected
-    // Handle goat placement
+    // No piece is selected
+    // Handle goat placement during placement phase
     if (phase === 'placement' && turn === 'goat' && clickedPiece === null) {
       if (isValidMove(gameState, null, position)) {
         console.log('Making goat placement move');
@@ -217,44 +163,81 @@ const GameBoard: React.FC<GameBoardProps> = ({
       }
     }
     
-    // Handle piece selection
+    // Handle piece selection for both tigers and goats
     if (clickedPiece === turn) {
+      // Check if the piece can actually move before selecting
       const validMoves = getValidMovesForPosition(gameState, position);
-      console.log('Selecting piece at', position, 'with', validMoves.length, 'valid moves');
-      onMove({ 
-        from: position, 
-        to: position, 
-        selection: true
-      });
+      if (validMoves.length > 0) {
+        console.log('Selecting piece at', position, 'for player', turn, 'with', validMoves.length, 'valid moves');
+        onMove({ 
+          from: position, 
+          to: position, 
+          selection: true
+        });
+      } else {
+        console.log('Piece at', position, 'has no valid moves');
+        // Still allow selection even if no moves, for better UX
+        onMove({ 
+          from: position, 
+          to: position, 
+          selection: true
+        });
+      }
       return;
     }
     
     console.log('No valid action for click at', position);
   };
   
-  // Generate intersections
+  // Generate board intersections
   const intersections = [];
   for (let row = 0; row < BOARD_SIZE; row++) {
     for (let col = 0; col < BOARD_SIZE; col++) {
       const position = { row, col };
       
+      // Check if this is a valid intersection
       if (isValidIntersection(position)) {
+        // Check if this position is highlighted (valid move)
         const isHighlighted = highlightedPositions.some(
           pos => pos.row === row && pos.col === col
         );
         
         intersections.push(
-          <circle
+          <div 
             key={`intersection-${row}-${col}`}
-            cx={col * cellSize}
-            cy={row * cellSize}
-            r="8"
-            fill={isHighlighted ? "#10B981" : "transparent"}
-            stroke="#654321"
-            strokeWidth="2"
-            className="cursor-pointer hover:fill-gray-300"
+            className={`board-intersection ${isHighlighted ? 'bg-game-highlight' : ''}`}
+            style={{
+              position: 'absolute',
+              left: `${col * cellSize}px`,
+              top: `${row * cellSize}px`,
+              transform: 'translate(-50%, -50%)',
+              zIndex: 20,
+              width: '20px',
+              height: '20px',
+              borderRadius: '50%',
+              cursor: 'pointer'
+            }}
             onClick={() => handleIntersectionClick(position)}
-          />
+          >
+            {/* Add green point for valid moves */}
+            {isHighlighted && (
+              <div 
+                className="valid-move-indicator" 
+                style={{
+                  position: 'absolute',
+                  width: '14px',
+                  height: '14px',
+                  backgroundColor: '#10B981', // Green color for the indicator
+                  borderRadius: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  left: '50%',
+                  top: '50%',
+                  boxShadow: '0 0 5px rgba(16, 185, 129, 0.7)',
+                  zIndex: 25
+                }}
+              />
+            )}
+          </div>
         );
       }
     }
@@ -266,6 +249,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
     for (let col = 0; col < BOARD_SIZE; col++) {
       const piece = gameState.board[row][col];
       if (piece) {
+        // Check if this is the selected piece
         const isSelected = gameState.selectedPiece?.row === row && gameState.selectedPiece?.col === col;
         
         pieces.push(
@@ -283,30 +267,21 @@ const GameBoard: React.FC<GameBoardProps> = ({
   
   return (
     <div 
-      className="relative bg-amber-50 rounded-lg shadow-xl border-4 border-amber-800"
+      className="relative bg-game-board rounded-md shadow-xl"
       style={{ 
-        width: `${boardSize + 40}px`, 
-        height: `${boardSize + 40}px`,
-        margin: '0 auto',
-        padding: '20px'
+        width: `${boardSize}px`, 
+        height: `${boardSize}px`,
+        margin: '0 auto'
       }}
     >
-      <svg
-        width={boardSize}
-        height={boardSize}
-        className="absolute top-5 left-5"
-      >
-        {generateBoardLines()}
-        {intersections}
-      </svg>
+      {/* Grid lines */}
+      {gridLines}
       
-      {/* Pieces layer */}
-      <div 
-        className="absolute top-5 left-5"
-        style={{ width: boardSize, height: boardSize }}
-      >
-        {pieces}
-      </div>
+      {/* Intersections */}
+      {intersections}
+      
+      {/* Pieces */}
+      {pieces}
     </div>
   );
 };
