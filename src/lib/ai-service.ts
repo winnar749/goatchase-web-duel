@@ -1,4 +1,3 @@
-
 import * as ort from 'onnxruntime-web';
 import { GameState, Move, Position } from '../types/game';
 import { getValidMovesForPosition, isValidMove, BOARD_SIZE } from './game-logic';
@@ -6,12 +5,12 @@ import { getValidMovesForPosition, isValidMove, BOARD_SIZE } from './game-logic'
 export class AIService {
   private tigerModel: ort.InferenceSession | null = null;
   private goatModel: ort.InferenceSession | null = null;
-  private isLoading = false;
+  private modelLoadingState = false;
 
   async loadModels(tigerModelUrl: string, goatModelUrl: string) {
-    if (this.isLoading) return;
+    if (this.modelLoadingState) return;
     
-    this.isLoading = true;
+    this.modelLoadingState = true;
     try {
       console.log('Loading AI models...');
       console.log('Tiger model URL:', tigerModelUrl);
@@ -28,7 +27,7 @@ export class AIService {
       console.error('Failed to load AI models:', error);
       throw error;
     } finally {
-      this.isLoading = false;
+      this.modelLoadingState = false;
     }
   }
 
@@ -250,7 +249,7 @@ export class AIService {
   }
 
   isLoading(): boolean {
-    return this.isLoading;
+    return this.modelLoadingState;
   }
 }
 
