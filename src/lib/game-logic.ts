@@ -1,4 +1,3 @@
-
 import { GameState, Position, Player, Move } from "../types/game";
 
 // Constants
@@ -133,25 +132,37 @@ export function isValidMove(gameState: GameState, from: Position | null, to: Pos
       return false;
     }
     
-    // Tigers can always move (during placement and movement phases)
+    // Tigers can always move (during both placement and movement phases)
     // Goats can move only during movement phase (after all goats are placed)
     if (turn === 'goat' && phase === 'placement') {
       return false; // Goats cannot move during placement phase
     }
     
-    // Check for normal adjacent moves
-    const adjacentPositions = getAdjacentPositions(from);
-    const isAdjacent = adjacentPositions.some(
-      pos => pos.row === to.row && pos.col === to.col
-    );
-    
-    if (isAdjacent) {
-      return true;
+    // Tigers can move during placement phase - this is the key fix
+    if (turn === 'tiger') {
+      // Tigers can move in both phases
+      // Check for normal adjacent moves
+      const adjacentPositions = getAdjacentPositions(from);
+      const isAdjacent = adjacentPositions.some(
+        pos => pos.row === to.row && pos.col === to.col
+      );
+      
+      if (isAdjacent) {
+        return true;
+      }
+      
+      // Check for tiger jumps (captures) - only during movement phase or if goats are available to capture
+      if (phase === 'movement' || gameState.goatsPlaced > 0) {
+        return isValidTigerJump(gameState, from, to);
+      }
     }
     
-    // Check for tiger jumps (captures)
-    if (turn === 'tiger') {
-      return isValidTigerJump(gameState, from, to);
+    // For goats during movement phase
+    if (turn === 'goat' && phase === 'movement') {
+      const adjacentPositions = getAdjacentPositions(from);
+      return adjacentPositions.some(
+        pos => pos.row === to.row && pos.col === to.col
+      );
     }
   }
   
