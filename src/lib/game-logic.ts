@@ -1,3 +1,4 @@
+
 import { GameState, Position, Player, Move } from "../types/game";
 
 // Constants
@@ -19,7 +20,7 @@ export function initializeGameState(): GameState {
   return {
     board,
     phase: 'placement',
-    turn: 'goat',
+    turn: 'goat', // Goats start first in placement phase
     goatsPlaced: 0,
     goatsCaptured: 0,
     selectedPiece: null,
@@ -120,16 +121,22 @@ export function isValidMove(gameState: GameState, from: Position | null, to: Pos
     return false;
   }
   
-  // Handle placement phase for goats only
+  // Handle goat placement during placement phase
   if (phase === 'placement' && turn === 'goat' && from === null) {
-    return true;
+    return gameState.goatsPlaced < TOTAL_GOATS;
   }
   
-  // Handle movement phase OR tiger movement during placement
+  // Handle movement (for both tigers and goats)
   if (from) {
     // Ensure 'from' position contains the current player's piece
     if (board[from.row][from.col] !== turn) {
       return false;
+    }
+    
+    // Tigers can always move (during placement and movement phases)
+    // Goats can move only during movement phase (after all goats are placed)
+    if (turn === 'goat' && phase === 'placement') {
+      return false; // Goats cannot move during placement phase
     }
     
     // Check for normal adjacent moves
@@ -313,9 +320,9 @@ export function makeMove(gameState: GameState, move: Move): GameState {
     newGameState.turn = 'tiger';
     console.log('Switching turn to tiger');
   } 
-  // Handle movement phase OR tiger movement during placement
+  // Handle movement (tigers during placement or any piece during movement)
   else if (from) {
-    console.log('Movement phase - moving piece from', from, 'to', to);
+    console.log('Moving piece from', from, 'to', to);
     // Move the piece
     newBoard[to.row][to.col] = newBoard[from.row][from.col];
     newBoard[from.row][from.col] = null;
@@ -335,14 +342,8 @@ export function makeMove(gameState: GameState, move: Move): GameState {
       }
     }
     
-    // Switch turns - Fixed logic for proper turn switching
-    if (gameState.phase === 'placement') {
-      // During placement phase, always switch to the other player
-      newGameState.turn = gameState.turn === 'goat' ? 'tiger' : 'goat';
-    } else {
-      // During movement phase, switch turns normally
-      newGameState.turn = gameState.turn === 'goat' ? 'tiger' : 'goat';
-    }
+    // Switch turns
+    newGameState.turn = gameState.turn === 'goat' ? 'tiger' : 'goat';
     console.log('Switching turn to:', newGameState.turn);
   }
   
