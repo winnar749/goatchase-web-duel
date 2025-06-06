@@ -97,7 +97,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
       console.log('Valid moves for selected piece:', validMoves);
       setHighlightedPositions(validMoves);
     } else if (gameState.phase === 'placement' && gameState.turn === 'goat') {
-      // Show all valid placement positions for goats
+      // Show all valid placement positions for goats during placement
       const validPlacements: Position[] = [];
       for (let row = 0; row < BOARD_SIZE; row++) {
         for (let col = 0; col < BOARD_SIZE; col++) {
@@ -117,18 +117,10 @@ const GameBoard: React.FC<GameBoardProps> = ({
   const handleIntersectionClick = (position: Position) => {
     if (readOnly || gameState.winner) return;
     
-    const { selectedPiece, turn, phase } = gameState;
+    const { selectedPiece, turn, phase, board } = gameState;
+    const clickedPiece = board[position.row][position.col];
     
-    console.log('Intersection clicked:', position, 'Turn:', turn, 'Phase:', phase, 'Selected:', selectedPiece);
-    
-    // If it's placement phase for goats
-    if (phase === 'placement' && turn === 'goat') {
-      if (isValidMove(gameState, null, position)) {
-        console.log('Making goat placement move');
-        onMove({ from: null, to: position });
-        return;
-      }
-    }
+    console.log('Intersection clicked:', position, 'Turn:', turn, 'Phase:', phase, 'Selected:', selectedPiece, 'Clicked piece:', clickedPiece);
     
     // If a piece is already selected
     if (selectedPiece) {
@@ -140,8 +132,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
         return;
       }
       
-      // If clicked on another own piece, select it instead
-      const clickedPiece = gameState.board[position.row][position.col];
+      // If clicked on another piece of the current player, select it instead
       if (clickedPiece === turn) {
         console.log('Selecting new piece at', position);
         onMove({ 
@@ -162,18 +153,40 @@ const GameBoard: React.FC<GameBoardProps> = ({
       return;
     }
     
-    // If no piece is selected, check if clicking on current player's piece
-    const clickedPiece = gameState.board[position.row][position.col];
+    // No piece is selected
+    // Handle goat placement during placement phase
+    if (phase === 'placement' && turn === 'goat' && clickedPiece === null) {
+      if (isValidMove(gameState, null, position)) {
+        console.log('Making goat placement move');
+        onMove({ from: null, to: position });
+        return;
+      }
+    }
+    
+    // Handle piece selection for both tigers and goats
     if (clickedPiece === turn) {
-      // Select the piece
-      console.log('Selecting piece at', position, 'for player', turn);
-      onMove({ 
-        from: position, 
-        to: position, 
-        selection: true
-      });
+      // Check if the piece can actually move before selecting
+      const validMoves = getValidMovesForPosition(gameState, position);
+      if (validMoves.length > 0) {
+        console.log('Selecting piece at', position, 'for player', turn, 'with', validMoves.length, 'valid moves');
+        onMove({ 
+          from: position, 
+          to: position, 
+          selection: true
+        });
+      } else {
+        console.log('Piece at', position, 'has no valid moves');
+        // Still allow selection even if no moves, for better UX
+        onMove({ 
+          from: position, 
+          to: position, 
+          selection: true
+        });
+      }
       return;
     }
+    
+    console.log('No valid action for click at', position);
   };
   
   // Generate board intersections
