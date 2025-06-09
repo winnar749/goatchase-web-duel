@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { GameState, Position, Player, Move } from "../types/game";
 import { 
@@ -92,9 +91,9 @@ const GameBoard: React.FC<GameBoardProps> = ({
   // Update highlighted positions when selected piece changes or for placement phase
   useEffect(() => {
     if (gameState.selectedPiece) {
-      // Show valid moves for the selected piece
+      // Show valid moves for the selected piece (works for both tigers and goats)
       const validMoves = getValidMovesForPosition(gameState, gameState.selectedPiece);
-      console.log('Valid moves for selected piece:', validMoves);
+      console.log('Valid moves for selected piece:', validMoves, 'Player:', gameState.board[gameState.selectedPiece.row][gameState.selectedPiece.col]);
       setHighlightedPositions(validMoves);
     } else if (gameState.phase === 'placement' && gameState.turn === 'goat') {
       // Show all valid placement positions for goats during placement
@@ -165,24 +164,13 @@ const GameBoard: React.FC<GameBoardProps> = ({
     
     // Handle piece selection for both tigers and goats
     if (clickedPiece === turn) {
-      // Check if the piece can actually move before selecting
-      const validMoves = getValidMovesForPosition(gameState, position);
-      if (validMoves.length > 0) {
-        console.log('Selecting piece at', position, 'for player', turn, 'with', validMoves.length, 'valid moves');
-        onMove({ 
-          from: position, 
-          to: position, 
-          selection: true
-        });
-      } else {
-        console.log('Piece at', position, 'has no valid moves');
-        // Still allow selection even if no moves, for better UX
-        onMove({ 
-          from: position, 
-          to: position, 
-          selection: true
-        });
-      }
+      // Always allow selection, even if no moves available (for better UX)
+      console.log('Selecting piece at', position, 'for player', turn);
+      onMove({ 
+        from: position, 
+        to: position, 
+        selection: true
+      });
       return;
     }
     

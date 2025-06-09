@@ -1,3 +1,4 @@
+
 import { GameState, Position, Player, Move } from "../types/game";
 
 // Constants
@@ -327,7 +328,7 @@ export function makeMove(gameState: GameState, move: Move): GameState {
       newGameState.phase = 'movement';
     }
     
-    // Switch turn to tiger
+    // Switch turn to tiger after goat placement
     newGameState.turn = 'tiger';
     console.log('Switching turn to tiger');
   } 
@@ -353,8 +354,20 @@ export function makeMove(gameState: GameState, move: Move): GameState {
       }
     }
     
-    // Switch turns
-    newGameState.turn = gameState.turn === 'goat' ? 'tiger' : 'goat';
+    // Switch turns properly
+    if (gameState.phase === 'placement') {
+      // During placement phase, after tiger moves, it's goat's turn (if goats not all placed)
+      if (gameState.turn === 'tiger' && newGameState.goatsPlaced < TOTAL_GOATS) {
+        newGameState.turn = 'goat';
+      } else if (gameState.turn === 'goat') {
+        // This shouldn't happen during placement, but just in case
+        newGameState.turn = 'tiger';
+      }
+    } else {
+      // During movement phase, alternate turns normally
+      newGameState.turn = gameState.turn === 'goat' ? 'tiger' : 'goat';
+    }
+    
     console.log('Switching turn to:', newGameState.turn);
   }
   
