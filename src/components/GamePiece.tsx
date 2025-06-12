@@ -7,13 +7,15 @@ interface GamePieceProps {
   position: Position;
   cellSize: number;
   isSelected?: boolean;
+  onClick?: () => void;
 }
 
 const GamePiece: React.FC<GamePieceProps> = ({ 
   type, 
   position, 
   cellSize,
-  isSelected = false
+  isSelected = false,
+  onClick
 }) => {
   // Adjust piece size based on the board size
   const pieceSize = cellSize * 0.5; // Slightly larger for better visibility
@@ -39,6 +41,7 @@ const GamePiece: React.FC<GamePieceProps> = ({
         zIndex: 30,
         cursor: 'pointer'
       }}
+      onClick={onClick}
     >
       <span className="text-white font-bold text-lg">
         {type === "tiger" ? "T" : "G"}

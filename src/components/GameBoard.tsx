@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { GameState, Position, Player, Move } from "../types/game";
 import { 
@@ -38,9 +39,13 @@ const GameBoard: React.FC<GameBoardProps> = ({
         key={`h-${i}`} 
         className="board-line horizontal-line" 
         style={{ 
+          position: 'absolute',
           top: `${i * cellSize}px`, 
           left: 0, 
-          width: `${boardSize}px`
+          width: `${boardSize}px`,
+          height: '2px',
+          backgroundColor: '#8b4513',
+          zIndex: 10
         }} 
       />
     );
@@ -53,32 +58,127 @@ const GameBoard: React.FC<GameBoardProps> = ({
         key={`v-${i}`} 
         className="board-line vertical-line" 
         style={{ 
+          position: 'absolute',
           left: `${i * cellSize}px`, 
           top: 0, 
-          height: `${boardSize}px`
+          height: `${boardSize}px`,
+          width: '2px',
+          backgroundColor: '#8b4513',
+          zIndex: 10
         }} 
       />
     );
   }
   
-  // Diagonal lines
+  // Main diagonal lines (center cross)
   gridLines.push(
     <div 
-      key="d-1" 
+      key="d-main-1" 
       className="board-line diagonal-line" 
       style={{ 
+        position: 'absolute',
         width: `${Math.sqrt(2) * boardSize}px`,
-        transform: `translateX(-${(Math.sqrt(2) * boardSize - boardSize) / 2}px) rotate(45deg)`
+        height: '2px',
+        backgroundColor: '#8b4513',
+        left: '50%',
+        top: '50%',
+        transformOrigin: 'center',
+        transform: `translate(-50%, -50%) rotate(45deg)`,
+        zIndex: 10
       }} 
     />
   );
   gridLines.push(
     <div 
-      key="d-2" 
+      key="d-main-2" 
       className="board-line diagonal-line" 
       style={{ 
+        position: 'absolute',
         width: `${Math.sqrt(2) * boardSize}px`,
-        transform: `translateX(-${(Math.sqrt(2) * boardSize - boardSize) / 2}px) rotate(-45deg)`
+        height: '2px',
+        backgroundColor: '#8b4513',
+        left: '50%',
+        top: '50%',
+        transformOrigin: 'center',
+        transform: `translate(-50%, -50%) rotate(-45deg)`,
+        zIndex: 10
+      }} 
+    />
+  );
+  
+  // Corner diagonal lines
+  // Top-left to top-right diagonal
+  gridLines.push(
+    <div 
+      key="corner-diag-1" 
+      className="board-line diagonal-line" 
+      style={{ 
+        position: 'absolute',
+        width: `${boardSize}px`,
+        height: '2px',
+        backgroundColor: '#8b4513',
+        left: '0px',
+        top: '0px',
+        transformOrigin: 'left',
+        transform: `rotate(${Math.atan2(cellSize, boardSize) * 180 / Math.PI}deg)`,
+        zIndex: 10
+      }} 
+    />
+  );
+  
+  // Top-left to bottom-left diagonal
+  gridLines.push(
+    <div 
+      key="corner-diag-2" 
+      className="board-line diagonal-line" 
+      style={{ 
+        position: 'absolute',
+        width: `${boardSize}px`,
+        height: '2px',
+        backgroundColor: '#8b4513',
+        left: '0px',
+        top: '0px',
+        transformOrigin: 'left',
+        transform: `rotate(${Math.atan2(boardSize, cellSize) * 180 / Math.PI}deg)`,
+        zIndex: 10
+      }} 
+    />
+  );
+  
+  // Top-right to bottom-right diagonal
+  gridLines.push(
+    <div 
+      key="corner-diag-3" 
+      className="board-line diagonal-line" 
+      style={{ 
+        position: 'absolute',
+        width: `${boardSize}px`,
+        height: '2px',
+        backgroundColor: '#8b4513',
+        left: `${boardSize}px`,
+        top: '0px',
+        transformOrigin: 'left',
+        transform: `rotate(${Math.atan2(boardSize, -cellSize) * 180 / Math.PI}deg)`,
+        zIndex: 10
+      }} 
+    />
+  );
+  
+  // Bottom-left to bottom-right diagonal
+  gridLines.push(
+    <div 
+      key="corner-diag-4" 
+      className="board-line diagonal-line" 
+      style={{ 
+        position: 'absolute',
+        width: `${boardSize}px`,
+        height: '2px',
+        backgroundColor: '#8b4513',
+        left: '0px',
+        top: `${boardSize}px`,
+        transformOrigin: 'left',
+        transform: `rotate(${Math.atan2(-cellSize, boardSize) * 180 / Math.PI}deg)`,
+        zIndex: 10
       }} 
     />
   );
@@ -176,6 +276,23 @@ const GameBoard: React.FC<GameBoardProps> = ({
     
     console.log('No valid action for click at', position);
   };
+
+  // Handle piece click (for direct piece interaction)
+  const handlePieceClick = (position: Position, piece: Player) => {
+    if (readOnly || gameState.winner) return;
+    
+    console.log('Piece clicked:', position, 'Piece:', piece, 'Current turn:', gameState.turn);
+    
+    // Only allow clicking pieces of the current player
+    if (piece === gameState.turn) {
+      console.log('Selecting piece at', position, 'for player', piece);
+      onMove({ 
+        from: position, 
+        to: position, 
+        selection: true
+      });
+    }
+  };
   
   // Generate board intersections
   const intersections = [];
@@ -247,6 +364,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
             position={{ row, col }}
             cellSize={cellSize}
             isSelected={isSelected}
+            onClick={() => handlePieceClick({ row, col }, piece)}
           />
         );
       }
